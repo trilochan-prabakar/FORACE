@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 
 import pandas as pd
+import altair as alt
 import streamlit as st
 
 from integritywatch.dashboard_data import (
@@ -540,48 +541,202 @@ def render_audit(paths, bundle):
         st.write("HMAC-SHA256 authenticates the exact baseline bytes using a protected secret key. The audit log links each record to its predecessor with SHA-256, so edits or removals can be detected during verification. This is tamper-evident storage, not tamper-proof storage; protect the database and keep independent backups.")
 
 
+
 def render_evaluation(evaluation):
-    _page_header("Detection Performance & Evaluation", "Measured scenario results for smart and hash-only detection.", "EVALUATION")
+    _page_header(
+        "Detection Performance & Evaluation",
+        "Measured scenario results for smart and hash-only detection.",
+        "EVALUATION",
+    )
+
     if evaluation["status"] != "available":
         st.warning(evaluation["message"])
         return
+
     metrics = evaluation["metrics"]
+
     st.markdown("#### Detection performance")
     a, b, c = st.columns(3)
     a.metric("Smart detection rate", f"{metrics['detection_rate']:.1%}")
     b.metric("False-positive rate", f"{metrics['false_positive_rate']:.1%}")
     c.metric("False-negative rate", f"{metrics['false_negative_rate']:.1%}")
+
     d, e, f = st.columns(3)
     d.metric("Attack scenarios", metrics["total_attack_scenarios"])
     e.metric("Attacks detected", metrics["successfully_detected_attack_scenarios"])
     f.metric("Benign scenarios", metrics["total_benign_scenarios"])
-    st.caption("Rates are calculated from the scenarios in the selected results CSV. Synthetic scenarios are useful for repeatable checks; they do not establish real-world detection performance.")
-    left, right = st.columns(2)
-    with left:
-        st.markdown("#### Smart vs. hash-only")
-        comparison = pd.DataFrame({"Mode": ["Smart", "Hash-only"],
-                                   "Detection rate": [metrics["detection_rate"], metrics["hash_only_attack_detection_rate"]]})
-        st.bar_chart(comparison, x="Detection rate", y="Mode", horizontal=True,
-                     color="#55c9bd", height=250)
-    with right:
-        st.markdown("#### Detection and false-positive rates")
-        benign_count = metrics["total_benign_scenarios"]
-        hash_fp_rate = metrics["hash_only_benign_alert_scenarios"] / benign_count if benign_count else 0.0
-        rates = pd.DataFrame({"Measure": ["Smart detection", "Hash-only detection", "Smart false positives", "Hash-only false positives"],
-                              "Rate": [metrics["detection_rate"], metrics["hash_only_attack_detection_rate"],
-                                       metrics["false_positive_rate"], hash_fp_rate]})
-        st.bar_chart(rates, x="Rate", y="Measure", horizontal=True,
-                     color="#83b6ff", height=250)
+
+    st.caption(
+        "Rates are calculated from the scenarios in the selected results CSV. "
+        "Synthetic scenarios are useful for repeatable checks; they do not "
+        "establish real-world detection performance."
+    )
+
+    # Chart 1: Smart vs. hash-only detection
+    st.markdown("#### Smart vs. hash-only")
+
+    comparison = pd.DataFrame({
+        "Mode": ["Smart", "Hash-only"],
+        "Detection rate": [
+            metrics["detection_rate"],
+            metrics["hash_only_attack_detection_rate"],
+        ],
+    })
+
+    comparison_chart = (
+        alt.Chart(comparison)
+        .mark_bar(color="#55c9bd", cornerRadiusEnd=5)
+        .encode(
+            x=alt.X(
+                "Detection rate:Q",
+                axis=alt.Axis(format="%", title="Detection rate"),
+                scale=alt.Scale(domain=[0, 1]),
+            ),
+            y=alt.Y("Mode:N", title=None, sort=None),
+            tooltip=[
+                alt.Tooltip("Mode:N"),
+                alt.Tooltip("Detection rate:Q", format=".1%"),
+            ],
+        )
+        .properties(height=130)
+    )
+
+    st.altair_chart(comparison_chart, width="stretch")
+
+    # Chart 2: Detection and false-positive rates
+    st.markdown("#### Detection and false-positive rates")
+
+    benign_count = metrics["total_benign_scenarios"]
+    hash_fp_rate = (
+        metrics["hash_only_benign_alert_scenarios"] / benign_count
+        if benign_count else 0.0
+    )
+
+    rates = pd.DataFrame({
+        "Measure": [
+            "Smart detection",
+            "Hash-only detection",
+            "Smart false positives",
+            "Hash-only false positives",
+        ],
+        "Rate": [
+            metrics["detection_rate"],
+            metrics["hash_only_attack_detection_rate"],
+            metrics["false_positive_rate"],
+            hash_fp_rate,
+        ],
+    })
+
+    rates_chart = (
+        alt.Chart(rates)
+        .mark_bar(color="#83b6ff", cornerRadiusEnd=5)
+        .encode(
+            x=alt.X(
+                "Rate:Q",
+                axis=alt.Axis(format="%", title="Rate"),
+                scale=alt.Scale(domain=[0, 1]),
+            ),
+            y=alt.Y("Measure:N", title=None, sort=None),
+            tooltip=[
+                alt.Tooltip("Measure:N"),
+                alt.Tooltip("Rate:Q", format=".1%"),
+            ],
+        )
+        .properties(height=190)
+    )
+
+    st.altair_chart(rates_chart, width="stretch")
+
+    # Rule coverage table
     st.markdown("#### Rule coverage")
-    st.dataframe(pd.DataFrame([{"Rule": rule, **data} for rule, data in metrics["rule_wise_coverage"].items()]), width="stretch", hide_index=True)
+
+    coverage = pd.DataFrame([
+        {"Rule": rule, **data}
+        for rule, data in metrics["rule_wise_coverage"].items()
+    ])
+
+    if not coverage.empty:
+        if "coverage" in coverage.columns:
+            coverage["coverage"] = coverage["coverage"].map(
+                lambda value: f"{value:.0%}"
+                if isinstance(value, (int, float))
+                else value
+            )
+
+        st.dataframe(
+            coverage,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Rule": st.column_config.TextColumn("Rule", width="small"),
+                "scenarios": st.column_config.NumberColumn("Scenarios", width="small"),
+                "detected": st.column_config.NumberColumn("Detected", width="small"),
+                "missed": st.column_config.NumberColumn("Missed", width="small"),
+                "coverage": st.column_config.TextColumn("Coverage", width="small"),
+            },
+        )
+    else:
+        st.info("No rule coverage data is available.")
+
+    # Benign scenario table
     st.markdown("#### Benign scenario results")
-    benign = [row for row in evaluation["rows"] if row["category"] == "benign"]
-    st.dataframe(pd.DataFrame(benign), width="stretch", hide_index=True)
+
+    benign = [
+        row for row in evaluation["rows"]
+        if row["category"] == "benign"
+    ]
+
+    benign_frame = pd.DataFrame(benign)
+
+    if not benign_frame.empty:
+        st.dataframe(
+            benign_frame,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "scenario_id": st.column_config.TextColumn("Scenario", width="small"),
+                "category": st.column_config.TextColumn("Category", width="small"),
+                "description": st.column_config.TextColumn("Description", width="large"),
+                "expected_rule_id": st.column_config.TextColumn("Expected rule", width="small"),
+                "smart_expected_rule_detected": st.column_config.CheckboxColumn(
+                    "Smart detection", width="small"
+                ),
+                "smart_finding_count": st.column_config.NumberColumn(
+                    "Finding count", width="small"
+                ),
+            },
+        )
+    else:
+        st.info("No benign scenario results are available.")
+
+    # Attack scenario outcomes
     with st.expander("Attack scenario outcomes"):
-        attacks = [row for row in evaluation["rows"] if row["category"] == "attack"]
-        st.dataframe(pd.DataFrame(attacks), width="stretch", hide_index=True)
+        attacks = [
+            row for row in evaluation["rows"]
+            if row["category"] == "attack"
+        ]
+
+        attacks_frame = pd.DataFrame(attacks)
+
+        if not attacks_frame.empty:
+            st.dataframe(
+                attacks_frame,
+                width="stretch",
+                hide_index=True,
+            )
+        else:
+            st.info("No attack scenario results are available.")
+
     with st.expander("Methodology and limits"):
-        st.write("Each CSV row is one recorded scenario. Detection rate is detected attack scenarios divided by attack scenarios; false-positive rate is benign scenarios that produced alerts divided by benign scenarios; false-negative rate is missed attack scenarios divided by attack scenarios. Results depend on the small controlled scenario set, current rules and labels.")
+        st.write(
+            "Each CSV row is one recorded scenario. Detection rate is detected "
+            "attack scenarios divided by attack scenarios; false-positive rate "
+            "is benign scenarios that produced alerts divided by benign scenarios; "
+            "false-negative rate is missed attack scenarios divided by attack "
+            "scenarios. Results depend on the small controlled scenario set, "
+            "current rules and labels."
+        )
+
 
 
 def render_demo():
