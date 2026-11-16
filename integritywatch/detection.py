@@ -84,6 +84,98 @@ def _semantic_signature(path, text):
 
     return None
 
+def _analyze_ssh(path, old_text, new_text):
+    triggers = analyze_sshd(old_text, new_text)
+    rule_ids = [
+        "R01" if trigger.startswith("PermitRootLogin") else "R02"
+        for trigger in triggers
+    ]
+    extra = []
+    if not rule_ids and changed_sshd_security_settings(old_text, new_text):
+        extra.append(_finding(path, "ssh_setting_changed"))
+    return rule_ids, extra
+
+
+def _analyze_authorized_keys(path, old_text, new_text):
+    changes = analyze_authorized_keys(old_text, new_text)
+    rule_ids = ["R03"] if changes["added"] else []
+    extra = []
+    if changes["removed"]:
+        extra.append(_finding(path, "ssh_key_removed"))
+    if changes["modified"]:
+        extra.append(_finding(path, "ssh_key_options_changed"))
+    return rule_ids, extra
+
+
+def _analyze_cron(path, old_text, new_text):
+    changes = analyze_crontab(old_text, new_text)
+    rule_ids = []
+    extra = []
+    if changes["suspicious"]:
+        rule_ids.append("R05")
+    if any(entry not in changes["suspicious"] for entry in changes["added"]):
+        rule_ids.append("R04")
+    if changes["removed"]:
+        extra.append(_finding(path, "cron_entry_removed"))
+    return rule_ids, extra
+
+
+def _analyze_passwd(path, old_text, new_text):
+    changes = analyze_passwd(old_text, new_text)
+    rule_ids = []
+    extra = []
+    if changes["new_users"]:
+        rule_ids.append("R06")
+    if changes["uid_zero"]:
+        rule_ids.append("R07")
+    if changes["service_shell"]:
+        rule_ids.append("R08")
+    for key, kind in (
+        ("removed_users", "user_removed"),
+        ("uid_changes", "uid_changed"),
+        ("gid_changes", "gid_changed"),
+    ):
+        if changes[key]:
+            extra.append(_finding(path, kind))
+    return rule_ids, extra
+
+
+def _analyze_sudoers(path, old_text, new_text):
+    changes = analyze_sudoers(old_text, new_text)
+    rule_ids = []
+    extra = []
+    if changes["nopasswd"]:
+        rule_ids = ["R09"]
+    elif changes["admin_privileges"]:
+        extra.append(_finding(path, "admin_privileges_changed"))
+    if changes["removed_admin_privileges"]:
+        extra.append(_finding(path, "admin_privileges_removed"))
+    return rule_ids, extra
+
+
+def _analyze_systemd(path, old_text, new_text):
+    rule_ids = ["R12"] if analyze_systemd(old_text, new_text) else []
+    return rule_ids, []
+
+
+SEMANTIC_DISPATCH = (
+    (lambda path: path == "etc/ssh/sshd_config", _analyze_ssh),
+    (lambda path: path.endswith("/.ssh/authorized_keys"), _analyze_authorized_keys),
+    (lambda path: path == "etc/crontab", _analyze_cron),
+    (lambda path: path == "etc/passwd", _analyze_passwd),
+    (lambda path: path == "etc/sudoers", _analyze_sudoers),
+    (
+        lambda path: path.startswith("etc/systemd/system/") and path.endswith(".service"),
+        _analyze_systemd,
+    ),
+)
+
+
+def _dispatch_semantic_analysis(path, old_text, new_text):
+    for matches, analyzer in SEMANTIC_DISPATCH:
+        if matches(path):
+            return analyzer(path, old_text, new_text)
+    return [], []
 
 def compare_scans(baseline, current, mode="smart", rules_path="rules.yaml"):
     """Return findings for paths relative to the controlled lab root only."""
@@ -150,41 +242,16 @@ def compare_scans(baseline, current, mode="smart", rules_path="rules.yaml"):
             findings.append(_finding(path, "modified"))
             continue
 
-        rule_ids = []
         try:
-            if path == "etc/ssh/sshd_config":
-                triggers = analyze_sshd(old_text, new_text)
-                rule_ids = ["R01" if t.startswith("PermitRootLogin") else "R02" for t in triggers]
-                if not rule_ids and changed_sshd_security_settings(old_text, new_text):
-                    findings.append(_finding(path, "ssh_setting_changed"))
-            elif path.endswith("/.ssh/authorized_keys"):
-                key_changes = analyze_authorized_keys(old_text, new_text)
-                if key_changes["added"]: rule_ids = ["R03"]
-                if key_changes["removed"]: findings.append(_finding(path, "ssh_key_removed"))
-                if key_changes["modified"]: findings.append(_finding(path, "ssh_key_options_changed"))
-            elif path == "etc/crontab":
-                changes = analyze_crontab(old_text, new_text)
-                if changes["suspicious"]: rule_ids.append("R05")
-                if any(entry not in changes["suspicious"] for entry in changes["added"]):
-                    rule_ids.append("R04")
-                if changes["removed"]: findings.append(_finding(path, "cron_entry_removed"))
-            elif path == "etc/passwd":
-                changes = analyze_passwd(old_text, new_text)
-                if changes["new_users"]: rule_ids.append("R06")
-                if changes["uid_zero"]: rule_ids.append("R07")
-                if changes["service_shell"]: rule_ids.append("R08")
-                if changes["removed_users"]: findings.append(_finding(path, "user_removed"))
-                if changes["uid_changes"]: findings.append(_finding(path, "uid_changed"))
-                if changes["gid_changes"]: findings.append(_finding(path, "gid_changed"))
-            elif path == "etc/sudoers":
-                sudo_changes = analyze_sudoers(old_text, new_text)
-                if sudo_changes["nopasswd"]: rule_ids = ["R09"]
-                elif sudo_changes["admin_privileges"]: findings.append(_finding(path, "admin_privileges_changed"))
-                if sudo_changes["removed_admin_privileges"]: findings.append(_finding(path, "admin_privileges_removed"))
-            elif path.startswith("etc/systemd/system/") and path.endswith(".service"):
-                if analyze_systemd(old_text, new_text): rule_ids = ["R12"]
+            rule_ids, extra_findings = _dispatch_semantic_analysis(
+                path, old_text, new_text
+            )
+            findings.extend(extra_findings)
+
             for rule_id in rule_ids:
-                findings.append(_finding(path, by_id[rule_id]["trigger"], by_id[rule_id]))
+                findings.append(
+                    _finding(path, by_id[rule_id]["trigger"], by_id[rule_id])
+                )
         except Exception:
             # A parser failure must not erase a content change or leave partial semantic results.
             del findings[semantic_start:]
