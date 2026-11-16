@@ -118,7 +118,7 @@ never show HMAC key contents.
   bundle supplies the current default trust anchor.
 - Semantic detection is limited to R01–R12 and supported syntax. The sudoers
   parser is line-based; cron suspicious markers are text matches, not shell
-  analysis. YAML `file_glob` metadata does not drive hardcoded rule dispatch;
+  analysis. Semantic rule matching is controlled by the Python dispatch table;
   see [Phase 2 detection notes](phase2-detection.md).
 - Evaluation metrics describe the small synthetic Phase 4 corpus only. They
   are not estimates of real-world detection performance.
