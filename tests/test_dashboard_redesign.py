@@ -308,12 +308,36 @@ def test_demo_page_shows_architecture_stages_and_limitations():
     assert not app.exception
 
 
-def test_default_anchor_is_not_assumed_to_exist_on_a_fresh_clone():
+def test_default_anchor_is_not_assumed_to_exist_on_a_fresh_clone(tmp_path):
     root = Path(__file__).resolve().parents[1]
-    app = AppTest.from_file(root / "dashboard.py", default_timeout=20).run()
+
+    db = tmp_path / "empty.db"
+    baseline = tmp_path / "missing-baseline.json"
+
+    initialize_database(db)
+
+    paths = {
+        "iw_db_path": db,
+        "iw_baseline_path": baseline,
+        "iw_key_path": tmp_path / "missing.key",
+        "iw_signature_path": tmp_path / "missing.hmac",
+    }
+
+    app = AppTest.from_file(
+        root / "dashboard.py",
+        default_timeout=20
+    ).run()
+
+    for widget_key, value in paths.items():
+        app.sidebar.text_input(key=widget_key).set_value(str(value)).run()
+
     app.sidebar.button(key="nav_audit_and_verification").click().run()
+
     assert any("EMPTY" in item.value for item in app.info)
-    assert {metric.label: metric.value for metric in app.metric}["Authentication"] != "VERIFIED"
+    assert {
+        metric.label: metric.value for metric in app.metric
+    }["Authentication"] != "VERIFIED"
+
     assert not app.exception
 
 
