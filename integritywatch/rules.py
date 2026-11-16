@@ -2,7 +2,7 @@
 from pathlib import Path
 import yaml
 
-REQUIRED = {"id", "description", "file_glob", "trigger", "severity", "attack_id", "explanation_template"}
+REQUIRED = {"id", "description", "trigger", "severity", "attack_id", "explanation_template"}
 
 
 def load_rules(path="rules.yaml"):
