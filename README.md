@@ -1,0 +1,340 @@
+# IntegrityWatch Lite
+
+IntegrityWatch Lite is a local file-integrity monitor for a controlled Linux-like
+lab. It records what changed and explains supported security-relevant changes
+with rules, severity, and MITRE ATT&CK references. It combines a signed baseline,
+SHA-256 file scans, semantic configuration checks, a SQLite finding store with
+a hash-chained audit log, repeatable simulations, and a Streamlit dashboard.
+
+> **Scope:** this is a local, single-user teaching and evaluation tool for the
+> synthetic `lab/` directory, not an enterprise endpoint security product. The
+> official V1.0 trust anchor is the separately established bundle under
+> `data/recovery/new-trust-anchor/`. The original baseline and signature remain
+> preserved, but their original key is unavailable and their authenticity was
+> not recovered.
+
+## Contents
+
+- [Problem and objectives](#problem-and-objectives)
+- [Capabilities](#capabilities)
+- [Architecture](#architecture)
+- [Technology](#technology)
+- [Install on Linux or WSL2](#install-on-linux-or-wsl2)
+- [Create and initialize the sandbox](#create-and-initialize-the-sandbox)
+- [Original baseline and official V1.0 trust anchor](#original-baseline-and-official-v10-trust-anchor)
+- [Verify and monitor](#verify-and-monitor)
+- [Dashboard](#dashboard)
+- [Simulations and evaluation](#simulations-and-evaluation)
+- [CLI reference](#cli-reference)
+- [Documentation](#documentation)
+- [Limitations](#limitations)
+
+## Problem and objectives
+
+Traditional file-integrity checks can say that a file changed without helping
+an operator understand whether the change matters. IntegrityWatch Lite compares
+files to an authenticated baseline and adds a small semantic layer for common
+Linux configuration files. The project demonstrates how to explain changes
+such as enabling SSH root login, adding a cron entry, changing account records,
+or setting SUID metadata.
+
+The project aims to:
+
+1. Detect content and selected metadata changes in a deliberately controlled
+   sandbox.
+2. Explain supported configuration changes with a rule ID, severity, and
+   ATT&CK technique reference.
+3. Authenticate the baseline with HMAC-SHA256 and make stored findings
+   tamper-evident with a SHA-256 hash chain.
+4. Compare semantic “smart” detection with content-only “hash-only” detection
+   using reproducible synthetic scenarios.
+
+## Capabilities
+
+- SHA-256 content hashes, size, mode, owner/group IDs, modification time, and
+  bounded UTF-8 text snapshots for regular files.
+- No-follow, directory-descriptor-based scanning beneath the selected root;
+  symlinks and scan errors are reported rather than followed or mistaken for
+  deletions.
+- Smart semantic checks for the supported SSH, authorized-keys, cron, passwd,
+  sudoers, systemd, authentication-log, and SUID cases in `rules.yaml`.
+- Rules R01–R02 cover SSH, R03 authorized keys, R04–R05 cron, R06–R08 passwd,
+  R09 sudoers, R10 SUID, R11 authentication-log loss, and R12 systemd.
+- Hash-only mode for additions, deletions, and content changes.
+- Watchdog events with debouncing and independent periodic full reconciliation
+  (`--interval`, 30 seconds by default).
+- HMAC-SHA256 baseline authentication using a 32-byte, owner-only key.
+- SQLite findings and sequential SHA-256 hash-chained audit records.
+- Read-only Streamlit views for system status, findings, ATT&CK links, audit
+  events, and measured evaluation output.
+- Isolated attack and benign simulations, an evaluation CSV/report generator,
+  and a repeatable temporary-workspace demonstration.
+
+## Architecture
+
+```text
+synthetic lab/
+    │
+    ├── scanner ──> SHA-256 + metadata + bounded text snapshots
+    │                    │
+signed baseline ─────────┤
+                         ├── smart semantic rules / hash-only comparison
+watchdog events ─────────┤                 │
+periodic reconciliation ─┘                 v
+                                     SQLite findings
+                                     SHA-256 audit chain
+                                          │
+                       Streamlit read-only dashboard
+                       evaluation results.csv / report
+```
+
+The monitor rescans the sandbox after relevant filesystem events and at a
+periodic interval. It does not trust event paths as files to open. Both paths
+use the scanner and comparison engine. Findings and their audit record are
+written in one SQLite transaction. See [architecture and data flow](docs/architecture.md)
+for module responsibilities and details.
+
+## Technology
+
+- Python 3.10 or later; tested in the supplied Python 3.12 environment.
+- Watchdog for filesystem event notifications.
+- PyYAML for the local rule file.
+- SQLite for findings and audit records.
+- Streamlit and pandas for the local dashboard and tabular evaluation views.
+- Python standard library for HMAC, SHA-256, temporary workspaces, filesystem
+  traversal, and evaluation tooling.
+
+No AI/ML or external service is used. The dashboard serves locally to the
+browser, and data collection stays on the machine. ATT&CK references are links
+opened by the user.
+
+## Install on Linux or WSL2
+
+Use a Linux filesystem location for the project when running under WSL2 (for
+example, `~/Projects/IntegrityWatch-Lite`) to avoid Windows-mounted filesystem
+event and permission differences.
+
+```bash
+cd ~/Projects/IntegrityWatch-Lite
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip
+python3 -m venv venv
+venv/bin/python -m pip install --upgrade pip
+venv/bin/python -m pip install -r requirements.txt
+```
+
+Run commands from the project root. Use `venv/bin/python` so the application,
+tests, and dashboard use the installed project dependencies.
+
+## Create and initialize the sandbox
+
+The repository already includes a synthetic `lab/`. On a new checkout where it
+does not exist, create it once:
+
+```bash
+venv/bin/python -B make_lab.py
+```
+
+Do not use `venv/bin/python -B make_lab.py --force` unless you intend to overwrite the
+synthetic sample files. This sandbox contains text fixtures only; it does not
+apply settings to the host.
+
+On a fresh project with no baseline or signature, create and authenticate a
+baseline:
+
+```bash
+venv/bin/python -B -m integritywatch init lab
+```
+
+The command creates the selected baseline, key (mode `0600`), signature, and
+initializes the SQLite database. Defaults target the official V1.0 trust
+anchor; because those files already exist, initialization refuses to replace
+them without explicit `--approve-update`. A key is never silently regenerated
+to bless existing trust data.
+
+## Original baseline and official V1.0 trust anchor
+
+The original `data/baseline.json` and `data/baseline.json.hmac` are preserved,
+but their original key `data/baseline.key` is unavailable. Their authenticity
+was not recovered. A separate V1.0 trust anchor was established at
+`data/recovery/new-trust-anchor/`, containing its own baseline, 32-byte key,
+detached signature, and recovery record. The key has owner-only `0600`
+permissions. This bundle is the default for CLI verification, monitoring, and
+dashboard health checks. Keep it protected; do not regenerate or replace it.
+
+The `rebaseline` command established a new trust anchor after review of the
+controlled lab; it did not authenticate or replace the original baseline. Its
+output directory already exists, so another run stops instead of replacing the
+V1.0 bundle. Recovery implementation details and limits are in the
+[security design](docs/security-design.md).
+
+Verify the recovery files with:
+
+```bash
+venv/bin/python -B -m integritywatch verify --lab lab --mode smart
+```
+
+Back up the new key securely. Do not replace the original trust files unless a
+separate operator-reviewed migration is intended.
+
+## Verify and monitor
+
+Compare the current lab to the authenticated baseline:
+
+```bash
+venv/bin/python -B -m integritywatch verify --lab lab --mode smart
+venv/bin/python -B -m integritywatch verify --lab lab --mode hash-only
+```
+
+Start event monitoring plus periodic reconciliation:
+
+```bash
+venv/bin/python -B -m integritywatch watch --lab lab --mode smart --debounce 0.5 --interval 30
+```
+
+Stop with Ctrl+C. The CLI writes a local heartbeat while monitoring and removes
+its own heartbeat on graceful shutdown. The monitor refuses to start if
+baseline authentication fails or if the existing audit chain is invalid. It
+also refuses any attempt to append a finding to an invalid chain.
+
+Verify the audit chain without changing the database, or print stored findings:
+
+```bash
+venv/bin/python -B -m integritywatch verify-log --db data/integritywatch.db
+venv/bin/python -B -m integritywatch report --db data/integritywatch.db
+```
+
+`verify-log` returns `empty`, `valid`, `invalid`, or `error`. An empty chain is
+not shown as verified by the dashboard because there are no records to check.
+
+## Dashboard
+
+Run the dashboard from the project root:
+
+```bash
+venv/bin/python -B -m streamlit run dashboard.py --server.address 127.0.0.1 --server.port 8501
+```
+
+Open `http://localhost:8501` in the Linux or Windows browser. If WSL does not
+open a browser automatically, copy the URL into the browser. The dashboard is
+read-only and shows SQLite, baseline authentication, monitor status, and
+`results.csv`. File Integrity is fixed to the project's `lab/` directory.
+Missing or invalid inputs are shown as such; the dashboard does not invent
+sample alerts. Its six sections are Overview, Security Findings, File
+Integrity, Audit & Verification, Evaluation, and Demo / About. The command
+binds the server to localhost. See
+[dashboard operation](docs/phase5-dashboard-demo.md).
+
+## Testing
+
+Run the full suite from the project root:
+
+```bash
+venv/bin/python -B -m pytest -q -p no:cacheprovider
+```
+
+Tests that change files or databases use temporary workspaces. Dashboard
+database access is read-only.
+
+## Simulations and evaluation
+
+Run the safe repeatable R01 demonstration:
+
+```bash
+venv/bin/python -B demo.py
+```
+
+The demo copies `lab/` to a private temporary directory, creates a fresh
+authenticated baseline and SQLite database, starts the monitor, applies one
+safe SSH configuration text edit, reports the finding, compares detection
+modes, verifies the chain, then tampers with only its temporary database. The
+workspace is removed by default. Use `venv/bin/python -B demo.py --keep` to
+retain the temporary workspace for dashboard inspection.
+
+With `--keep`, use the printed temporary database and baseline paths in the
+dashboard data-source fields. The demo database is intentionally tampered
+after its valid-chain check, so the dashboard should show it as invalid. The
+workspace contains temporary trust material; do not publish or share it.
+
+Run the complete 16-scenario evaluation without replacing the repository's
+existing Phase 4 outputs:
+
+```bash
+venv/bin/python -B evaluate.py --output-dir /tmp/integritywatch-evaluation
+```
+
+The output directory receives `results.csv` and `evaluation_report.md`.
+Every scenario uses a separate copied lab and fresh baseline/key/signature.
+Metrics are recalculated from the generated rows. Current measured results for
+the documented corpus are 12/12 expected attack rules detected, 0/4 benign
+false-positive scenarios in smart mode, 11/12 hash-only attack detections, and
+3/4 hash-only benign alerts. These are corpus results, not real-world rates.
+See [evaluation methodology and results](docs/phase4-evaluation.md).
+
+## CLI reference
+
+| Command | Purpose | Common options |
+|---|---|---|
+| `venv/bin/python -B -m integritywatch init lab` | Create/authenticate baseline and initialize database | `--baseline`, `--key`, `--signature`, `--db`, `--approve-update` |
+| `venv/bin/python -B -m integritywatch verify` | Compare authenticated baseline to current lab | `--lab`, `--mode smart\|hash-only`, storage options |
+| `venv/bin/python -B -m integritywatch watch` | Watch events and reconcile periodically | `--lab`, `--mode`, `--debounce`, `--interval`, storage options |
+| `venv/bin/python -B -m integritywatch verify-log` | Read-only audit-chain check | `--db` |
+| `venv/bin/python -B -m integritywatch report` | Print stored finding rows as JSON | `--db` |
+
+When omitted, storage defaults are the baseline, owner-only key, and detached
+signature in `data/recovery/new-trust-anchor/`, plus `data/integritywatch.db`.
+The `rebaseline --source-*` options intentionally refer to the preserved
+original baseline and signature.
+Relative paths supplied to the CLI or dashboard resolve from the project
+root, regardless of the current working directory; absolute paths are used
+unchanged.
+
+## Documentation
+
+- [Architecture and data flow](docs/architecture.md)
+- [Detailed data flow](docs/data-flow.md)
+- [Threat model, security design, HMAC and hash chain](docs/security-design.md)
+- [Detection rules and ATT&CK references](docs/detection-rules.md)
+- [Evaluation methodology and measured results](docs/phase4-evaluation.md)
+- [Dashboard operation](docs/phase5-dashboard-demo.md)
+- [Timed project demo and presentation guide](docs/demo-guide.md)
+- [Viva preparation: basic and advanced questions](docs/viva-preparation.md)
+- [Final test and audit report](docs/final-test-report.md)
+
+## Security model
+
+The tool assumes a trusted local operating system and one operator working in
+the synthetic `lab/`. HMAC-SHA256 authenticates the selected baseline using an
+owner-only key; the SQLite audit chain makes stored changes tamper-evident.
+Neither protects against a same-user or root attacker who can alter the key and
+database, and the audit chain has no external trust anchor. The dashboard reads
+data without writing it and has no login, so keep it on localhost. Simulations
+change only disposable text fixtures and do not execute attack payloads.
+
+## Limitations
+
+- This is a local, single-user lab tool, not an enterprise endpoint security
+  product. It monitors the controlled lab, not a complete production host.
+- Detection is limited to R01–R12 and the supported syntax in
+  [Phase 2 detection notes](docs/phase2-detection.md). The sudoers analyzer is
+  line-based, not a complete parser; it does not expand aliases, includes, or
+  full policy precedence.
+- Cron suspicious-command checks use text markers rather than shell parsing;
+  they may miss unlisted patterns or match harmless text. YAML `file_glob`
+  values are metadata while matching dispatch remains hardcoded in
+  `integritywatch/detection.py`.
+- Hash-only mode does not detect metadata-only changes such as SUID changes.
+- File notifications can be missed; periodic reconciliation reduces this risk
+  but does not provide forensic event history.
+- A same-user or root attacker can modify the local database and key; the audit
+  chain has no external trusted anchor and is tamper-evident, not tamper-proof.
+- The original baseline's authenticity remains unavailable because its
+  original key is missing. V1.0 defaults use the separate bundle at
+  `data/recovery/new-trust-anchor/`; a missing or invalid selected key still
+  causes verification and monitoring to fail closed.
+- The evaluation set is synthetic and small. It does not estimate performance
+  against real adversaries or production filesystems.
+- The dashboard has no login or remote-access controls. Keep it bound to
+  localhost.
+- Linux/WSL filesystem, permissions, and event behavior are assumed. Windows
+  native execution is not a supported target.

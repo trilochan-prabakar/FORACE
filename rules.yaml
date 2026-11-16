@@ -1,0 +1,13 @@
+rules:
+  - {id: R01, description: SSH root login enabled, file_glob: etc/ssh/sshd_config, trigger: PermitRootLogin=yes, severity: High, attack_id: T1021.004, explanation_template: Root SSH login was enabled, allowing direct remote access to the privileged account.}
+  - {id: R02, description: SSH password authentication enabled, file_glob: etc/ssh/sshd_config, trigger: PasswordAuthentication=yes, severity: Medium, attack_id: T1021.004, explanation_template: SSH password authentication was enabled, increasing exposure to password guessing.}
+  - {id: R03, description: New authorized SSH key, file_glob: home/*/.ssh/authorized_keys, trigger: new_key, severity: High, attack_id: T1098.004, explanation_template: A new SSH public key was added and may grant persistent remote access.}
+  - {id: R04, description: New cron entry, file_glob: etc/crontab, trigger: new_cron_entry, severity: Medium, attack_id: T1053.003, explanation_template: A scheduled command was added to the system crontab.}
+  - {id: R05, description: Suspicious cron command, file_glob: etc/crontab, trigger: suspicious_cron, severity: Critical, attack_id: T1053.003, explanation_template: A scheduled command contains a suspicious execution pattern.}
+  - {id: R06, description: New passwd user, file_glob: etc/passwd, trigger: new_user, severity: High, attack_id: T1136.001, explanation_template: A new local account was added.}
+  - {id: R07, description: Non-root UID zero, file_glob: etc/passwd, trigger: nonroot_uid_zero, severity: Critical, attack_id: T1136.001, explanation_template: A non-root account was assigned UID 0 and therefore root identity.}
+  - {id: R08, description: Service account login shell, file_glob: etc/passwd, trigger: service_shell, severity: High, attack_id: T1098, explanation_template: A service account was changed to an interactive login shell.}
+  - {id: R09, description: New sudoers NOPASSWD rule, file_glob: etc/sudoers, trigger: new_nopasswd, severity: Critical, attack_id: T1548.003, explanation_template: A passwordless sudo privilege rule was added.}
+  - {id: R10, description: New SUID bit, file_glob: '*', trigger: new_suid, severity: High, attack_id: T1548.001, explanation_template: The file gained the SUID bit, which can run it with its owner's privileges.}
+  - {id: R11, description: Authentication log truncated or deleted, file_glob: var/log/auth.log, trigger: auth_log_loss, severity: High, attack_id: T1685.006, explanation_template: Authentication log data was deleted or reduced.}
+  - {id: R12, description: Systemd service changed, file_glob: etc/systemd/system/*.service, trigger: service_change, severity: Medium, attack_id: T1543.002, explanation_template: A systemd service was added or modified and may change persistent execution.}

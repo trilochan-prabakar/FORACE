@@ -1,0 +1,5 @@
+watchdog
+PyYAML
+streamlit
+pandas
+pytest

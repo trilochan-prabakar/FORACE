@@ -1,0 +1,44 @@
+# Python environments and generated caches
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Project runtime data, including baselines, signatures, databases, and keys
+data/*
+!data/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+*.key
+*.pem
+*.hmac
+*.sig
+
+# Local configuration, logs, and temporary/editor files
+*.log
+.env
+.env.*
+!.env.example
+*.tmp
+*.temp
+*.swp
+*~
+
+# Generated evaluator report (results.csv is a required project input)
+/evaluation_report.md
+
+# Local development instructions and sensitive notes
+HMAC.txt
+Instructions*.txt
+Phase_*.txt
+Release_Checklist.txt
+UI_Instructions*.txt
+
+# Local test environment and Streamlit secrets
+lab/
+.streamlit/secrets.toml
+docs/superpowers/
