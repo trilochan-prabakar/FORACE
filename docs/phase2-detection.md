@@ -26,10 +26,8 @@ The analyzers consume UTF-8 snapshots from the controlled lab. They do not open 
 
 The sudoers analyzer supports line-based rules and detects added or removed lines containing the `ALL` privilege token, plus newly added `NOPASSWD:` rules. It is deliberately not a full sudoers parser. It does not expand `User_Alias`, `Runas_Alias`, `Host_Alias`, or `Cmnd_Alias`; it does not evaluate Defaults, include directives, tags other than detecting `NOPASSWD:`, negation, command argument matching, or precedence. Such constructs may require human review and can produce incomplete results. Comments and whitespace-only differences are ignored for the supported line subset.
 
-The YAML `file_glob` values are required rule metadata, but current rule
-dispatch uses hardcoded path checks in `integritywatch/detection.py`. Editing
-a glob alone will not change matching behavior; treat the YAML globs as
-documentation until dispatch is made data-driven.
+Semantic rule dispatch is controlled by the `SEMANTIC_DISPATCH` table in `integritywatch/detection.py`. Each entry matches a supported lab-relative
+path and invokes its corresponding analyzer. Rule metadata is maintained separately in `rules.yaml`.
 
 Generic rename detection is limited to unique old/new paths with an identical SHA-256 digest. Duplicate-content files are reported as separate additions and deletions because their rename correspondence is ambiguous. A scan error for a previously known path is not treated as deletion.
 

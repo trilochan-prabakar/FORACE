@@ -314,10 +314,8 @@ change only disposable text fixtures and do not execute attack payloads.
   [Phase 2 detection notes](docs/phase2-detection.md). The sudoers analyzer is
   line-based, not a complete parser; it does not expand aliases, includes, or
   full policy precedence.
-- Cron suspicious-command checks use text markers rather than shell parsing;
-  they may miss unlisted patterns or match harmless text. YAML `file_glob`
-  values are metadata while matching dispatch remains hardcoded in
-  `integritywatch/detection.py`.
+- Semantic rule matching is controlled by the Python dispatch table in
+  `integritywatch/detection.py`; rule metadata is maintained in `rules.yaml`.
 - Hash-only mode does not detect metadata-only changes such as SUID changes.
 - File notifications can be missed; periodic reconciliation reduces this risk
   but does not provide forensic event history.
