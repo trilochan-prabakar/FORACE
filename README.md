@@ -298,7 +298,6 @@ unchanged.
 - [Evaluation methodology and measured results](docs/phase4-evaluation.md)
 - [Dashboard operation](docs/phase5-dashboard-demo.md)
 - [Timed project demo and presentation guide](docs/demo-guide.md)
-- [Viva preparation: basic and advanced questions](docs/viva-preparation.md)
 - [Final test and audit report](docs/final-test-report.md)
 
 ## Security model
