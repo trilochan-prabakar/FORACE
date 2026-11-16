@@ -20,44 +20,12 @@ def test_cli_default_paths_use_project_root_outside_project_directory(tmp_path, 
     assert not (tmp_path / "data" / "integritywatch.db").exists()
 
 
-def test_default_verify_uses_official_trust_anchor_and_preserves_original_artifacts(capsys):
-    project_root = Path(__file__).resolve().parents[1]
+def test_default_verify_uses_fresh_install_paths():
     args = _parser().parse_args(["verify"])
-    assert args.baseline == "data/recovery/new-trust-anchor/baseline.json"
-    assert args.key == "data/recovery/new-trust-anchor/baseline.key"
+
+    assert args.baseline == "data/baseline.json"
+    assert args.key == "data/baseline.key"
     assert args.signature is None
-
-    original_artifacts = (
-        project_root / "data/baseline.json",
-        project_root / "data/baseline.key",
-        project_root / "data/baseline.json.hmac",
-    )
-    recovery_artifacts = (
-        project_root / "data/recovery/new-trust-anchor/baseline.json",
-        project_root / "data/recovery/new-trust-anchor/baseline.key",
-        project_root / "data/recovery/new-trust-anchor/baseline.json.hmac",
-        project_root / "data/recovery/new-trust-anchor/recovery-record.json",
-    )
-
-    def snapshot(paths):
-        return {path: (path.read_bytes() if path.exists() else None,
-                       path.stat().st_mode & 0o777 if path.exists() else None)
-                for path in paths}
-
-    before = snapshot((*original_artifacts, *recovery_artifacts))
-    assert before[project_root / "data/recovery/new-trust-anchor/baseline.key"][1] == 0o600
-
-    authenticated = load_authenticated_baseline(
-        project_root / args.baseline,
-        project_root / args.key,
-        project_root / f"{args.baseline}.hmac",
-    )
-    assert Path(authenticated["root_directory"]) == (project_root / "lab").resolve()
-
-    assert main(["verify"]) == 0
-    capsys.readouterr()
-    assert snapshot((*original_artifacts, *recovery_artifacts)) == before
-
 
 def test_cli_relative_custom_paths_use_project_root(tmp_path, monkeypatch, capsys):
     project_root = Path(__file__).resolve().parents[1]

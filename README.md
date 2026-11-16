@@ -8,9 +8,9 @@ a hash-chained audit log, repeatable simulations, and a Streamlit dashboard.
 
 > **Scope:** this is a local, single-user teaching and evaluation tool for the
 > synthetic `lab/` directory, not an enterprise endpoint security product. The
-> official V1.0 trust anchor is the separately established bundle under
-> `data/recovery/new-trust-anchor/`. The original baseline and signature remain
-> preserved, but their original key is unavailable and their authenticity was
+> Each installation creates its own baseline and trust anchor under
+> `data/`. Personal recovery bundles from the original development
+> environment are not included in this repository.
 > not recovered.
 
 ## Contents
@@ -21,7 +21,7 @@ a hash-chained audit log, repeatable simulations, and a Streamlit dashboard.
 - [Technology](#technology)
 - [Install on Linux or WSL2](#install-on-linux-or-wsl2)
 - [Create and initialize the sandbox](#create-and-initialize-the-sandbox)
-- [Original baseline and official V1.0 trust anchor](#original-baseline-and-official-v10-trust-anchor)
+- [Original baseline and local recovery bundle](#original-baseline-and-local-recovery-bundle)
 - [Verify and monitor](#verify-and-monitor)
 - [Dashboard](#dashboard)
 - [Simulations and evaluation](#simulations-and-evaluation)
@@ -128,8 +128,8 @@ tests, and dashboard use the installed project dependencies.
 
 ## Create and initialize the sandbox
 
-The repository already includes a synthetic `lab/`. On a new checkout where it
-does not exist, create it once:
+A fresh clone does not include the generated `lab/` directory. Create the
+synthetic sandbox before initializing the application:
 
 ```bash
 venv/bin/python -B make_lab.py
@@ -146,29 +146,24 @@ baseline:
 venv/bin/python -B -m integritywatch init lab
 ```
 
-The command creates the selected baseline, key (mode `0600`), signature, and
-initializes the SQLite database. Defaults target the official V1.0 trust
-anchor; because those files already exist, initialization refuses to replace
-them without explicit `--approve-update`. A key is never silently regenerated
-to bless existing trust data.
+The command creates a new baseline, key (mode `0600`), detached signature,
+and initializes the SQLite database. Fresh installations use their own
+trust anchor under `data/`. Existing trust data is not silently replaced;
+use `--approve-update` only when you deliberately intend to update it.
 
-## Original baseline and official V1.0 trust anchor
+## Original baseline and local recovery bundle
 
-The original `data/baseline.json` and `data/baseline.json.hmac` are preserved,
-but their original key `data/baseline.key` is unavailable. Their authenticity
-was not recovered. A separate V1.0 trust anchor was established at
-`data/recovery/new-trust-anchor/`, containing its own baseline, 32-byte key,
-detached signature, and recovery record. The key has owner-only `0600`
-permissions. This bundle is the default for CLI verification, monitoring, and
-dashboard health checks. Keep it protected; do not regenerate or replace it.
+The original baseline and recovery bundle discussed during development are
+local artifacts from the original author's environment. They are not included
+in this repository. Their presence is not required to install or run a fresh
+clone.
 
-The `rebaseline` command established a new trust anchor after review of the
-controlled lab; it did not authenticate or replace the original baseline. Its
-output directory already exists, so another run stops instead of replacing the
-V1.0 bundle. Recovery implementation details and limits are in the
-[security design](docs/security-design.md).
+Each installation should create and authenticate its own baseline and key
+using the `init` command above. Do not copy another installation's private key
+or recovery files into your environment. Recovery implementation details and
+limitations are described in the [security design](docs/security-design.md).
 
-Verify the recovery files with:
+To verify your installation's baseline, run:
 
 ```bash
 venv/bin/python -B -m integritywatch verify --lab lab --mode smart
@@ -281,8 +276,9 @@ See [evaluation methodology and results](docs/phase4-evaluation.md).
 | `venv/bin/python -B -m integritywatch verify-log` | Read-only audit-chain check | `--db` |
 | `venv/bin/python -B -m integritywatch report` | Print stored finding rows as JSON | `--db` |
 
-When omitted, storage defaults are the baseline, owner-only key, and detached
-signature in `data/recovery/new-trust-anchor/`, plus `data/integritywatch.db`.
+When omitted, storage defaults are `data/baseline.json`, the owner-only
+`data/baseline.key`, its detached signature `data/baseline.json.hmac`, and
+`data/integritywatch.db`.
 The `rebaseline --source-*` options intentionally refer to the preserved
 original baseline and signature.
 Relative paths supplied to the CLI or dashboard resolve from the project
@@ -329,9 +325,9 @@ change only disposable text fixtures and do not execute attack payloads.
 - A same-user or root attacker can modify the local database and key; the audit
   chain has no external trusted anchor and is tamper-evident, not tamper-proof.
 - The original baseline's authenticity remains unavailable because its
-  original key is missing. V1.0 defaults use the separate bundle at
-  `data/recovery/new-trust-anchor/`; a missing or invalid selected key still
-  causes verification and monitoring to fail closed.
+  Each installation uses its own baseline and key under `data/`;
+  a missing or invalid selected key still causes verification and
+  monitoring to fail closed.
 - The evaluation set is synthetic and small. It does not estimate performance
   against real adversaries or production filesystems.
 - The dashboard has no login or remote-access controls. Keep it bound to

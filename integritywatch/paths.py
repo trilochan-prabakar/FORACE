@@ -3,9 +3,9 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BASELINE_PATH = "data/recovery/new-trust-anchor/baseline.json"
-DEFAULT_KEY_PATH = "data/recovery/new-trust-anchor/baseline.key"
-DEFAULT_SIGNATURE_PATH = "data/recovery/new-trust-anchor/baseline.json.hmac"
+DEFAULT_BASELINE_PATH = "data/baseline.json"
+DEFAULT_KEY_PATH = "data/baseline.key"
+DEFAULT_SIGNATURE_PATH = "data/baseline.json.hmac"
 
 
 def project_path(value: str | Path) -> Path:

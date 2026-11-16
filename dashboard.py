@@ -627,9 +627,9 @@ python -m integritywatch report
 
 # Dashboard
 streamlit run dashboard.py""", language="bash")
-    st.info("V1.0 defaults use the authenticated trust anchor under data/recovery/new-trust-anchor/. The original baseline and signature remain preserved separately; the missing original key does not authenticate those original files.")
+    st.info("Each installation uses its own authenticated trust anchor under data/. Personal recovery bundles from the original development environment are not included in this repository.")
     st.markdown("#### Limitations")
-    st.write("The original baseline key is unavailable, so the original baseline cannot be authenticated. V1.0 uses a separately established trust anchor; the audit chain is tamper-evident, not tamper-proof. Protect the database and keep independent backups. Evaluation results come from a small synthetic scenario set and are not real-world performance claims.")
+    st.write("Each installation creates its own authenticated baseline and trust anchor. The audit chain is tamper-evident, not tamper-proof. Protect the database and keep independent backups. Evaluation results come from a small synthetic scenario set and are not real-world performance claims.")
     st.caption("Demo commands use the existing isolated workflow. The dashboard only reads selected records and files.")
 
 

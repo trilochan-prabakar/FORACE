@@ -36,9 +36,9 @@ def test_default_paths_stay_with_project_when_launched_elsewhere(tmp_path, monke
 
     assert dashboard._default_paths() == {
         "db": str(project_root / "data/integritywatch.db"),
-        "baseline": str(project_root / "data/recovery/new-trust-anchor/baseline.json"),
-        "key": str(project_root / "data/recovery/new-trust-anchor/baseline.key"),
-        "signature": str(project_root / "data/recovery/new-trust-anchor/baseline.json.hmac"),
+        "baseline": str(project_root / "data/baseline.json"),
+        "key": str(project_root / "data/baseline.key"),
+        "signature": str(project_root / "data/baseline.json.hmac"),
         "monitor": str(project_root / "data/monitor_status.json"),
         "evaluation": str(project_root / "results.csv"),
         "root": str(project_root / "lab"),
@@ -46,7 +46,7 @@ def test_default_paths_stay_with_project_when_launched_elsewhere(tmp_path, monke
     app = AppTest.from_file(project_root / "dashboard.py", default_timeout=20).run()
     assert app.sidebar.text_input(key="iw_db_path").value == str(project_root / "data/integritywatch.db")
     assert app.sidebar.text_input(key="iw_baseline_path").value == str(
-        project_root / "data/recovery/new-trust-anchor/baseline.json"
+        project_root / "data/baseline.json"
     )
     assert app.sidebar.text_input(key="iw_monitor_path").value == str(project_root / "data/monitor_status.json")
     assert all(widget.key != "iw_root_path" for widget in app.sidebar.text_input)
@@ -196,11 +196,8 @@ def test_dashboard_view_does_not_modify_baseline_or_database():
     root = Path(__file__).resolve().parents[1]
     protected = [root / "data/baseline.json", root / "data/baseline.key",
                  root / "data/baseline.json.hmac", root / "data/integritywatch.db",
-                 root / "data/monitor_status.json",
-                 root / "data/recovery/new-trust-anchor/baseline.json",
-                 root / "data/recovery/new-trust-anchor/baseline.key",
-                 root / "data/recovery/new-trust-anchor/baseline.json.hmac",
-                 root / "data/recovery/new-trust-anchor/recovery-record.json"]
+                 root / "data/monitor_status.json"]
+
     before = {path: (path.read_bytes() if path.exists() else None) for path in protected}
     app = AppTest.from_file(root / "dashboard.py", default_timeout=20).run()
     app.sidebar.button(key="nav_audit_and_verification").click().run()
@@ -243,27 +240,38 @@ def test_findings_summary_table_keeps_detail_in_the_investigation_panel(tmp_path
 
 
 def test_file_integrity_uses_compact_table_and_copyable_full_hash(tmp_path):
-    root = Path(__file__).resolve().parents[1] / "lab"
-    scanned = scan_directory(root)["files"]
-    file_path = root / next(iter(scanned))
-    baseline = tmp_path / "baseline.json"
-    save_baseline(create_baseline(root), baseline)
-    key = tmp_path / "key"
-    signature = tmp_path / "baseline.hmac"
-    generate_key(key)
-    sign_baseline(baseline, key, signature)
+    project_root = Path(__file__).resolve().parents[1]
+    root = project_root / "lab"
+    root.mkdir(exist_ok=True)
+    test_file = root / "dashboard_test_sample.txt"
+    test_file.write_text("IntegrityWatch dashboard test\\n", encoding="utf-8")
 
-    app = AppTest.from_file(Path(__file__).resolve().parents[1] / "dashboard.py", default_timeout=20).run()
-    for widget_key, value in (("iw_baseline_path", baseline),
-                              ("iw_key_path", key), ("iw_signature_path", signature)):
-        app.sidebar.text_input(key=widget_key).set_value(str(value)).run()
-    app.sidebar.button(key="nav_file_integrity").click().run()
+    try:
+        scanned = scan_directory(root)["files"]
+        baseline = tmp_path / "baseline.json"
+        save_baseline(create_baseline(root), baseline)
+        key = tmp_path / "key"
+        signature = tmp_path / "baseline.hmac"
+        generate_key(key)
+        sign_baseline(baseline, key, signature)
 
-    inventory_frame = app.dataframe[0].value
-    assert list(inventory_frame.columns) == ["File path", "Integrity state", "Size (bytes)", "Modified (UTC)"]
-    expected_hash = scanned[file_path.relative_to(root).as_posix()]["sha256"]
-    assert any(expected_hash in item.value for item in app.code)
-    assert not app.exception
+        app = AppTest.from_file(project_root / "dashboard.py", default_timeout=20).run()
+        for widget_key, value in (("iw_baseline_path", baseline),
+                                  ("iw_key_path", key), ("iw_signature_path", signature)):
+            app.sidebar.text_input(key=widget_key).set_value(str(value)).run()
+        app.sidebar.button(key="nav_file_integrity").click().run()
+
+        inventory_frame = app.dataframe[0].value
+        assert list(inventory_frame.columns) == ["File path", "Integrity state", "Size (bytes)", "Modified (UTC)"]
+        expected_hash = scanned["dashboard_test_sample.txt"]["sha256"]
+        assert any(expected_hash in item.value for item in app.code)
+        assert not app.exception
+    finally:
+        test_file.unlink(missing_ok=True)
+        try:
+            root.rmdir()
+        except OSError:
+            pass
 
 
 def test_overview_summarizes_real_monitored_files_without_trusting_missing_key(tmp_path):
@@ -300,13 +308,12 @@ def test_demo_page_shows_architecture_stages_and_limitations():
     assert not app.exception
 
 
-def test_default_anchor_is_verified_while_empty_audit_is_not_valid():
+def test_default_anchor_is_not_assumed_to_exist_on_a_fresh_clone():
     root = Path(__file__).resolve().parents[1]
     app = AppTest.from_file(root / "dashboard.py", default_timeout=20).run()
     app.sidebar.button(key="nav_audit_and_verification").click().run()
     assert any("EMPTY" in item.value for item in app.info)
-    assert {metric.label: metric.value for metric in app.metric}["Authentication"] == "VERIFIED"
-    assert any("HMAC key file: AVAILABLE" in item.value for item in app.caption)
+    assert {metric.label: metric.value for metric in app.metric}["Authentication"] != "VERIFIED"
     assert not app.exception
 
 
