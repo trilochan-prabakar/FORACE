@@ -298,36 +298,23 @@ unchanged.
 
 ## Security model
 
-The tool assumes a trusted local operating system and one operator working in
-the synthetic `lab/`. HMAC-SHA256 authenticates the selected baseline using an
-owner-only key; the SQLite audit chain makes stored changes tamper-evident.
-Neither protects against a same-user or root attacker who can alter the key and
-database, and the audit chain has no external trust anchor. The dashboard reads
-data without writing it and has no login, so keep it on localhost. Simulations
-change only disposable text fixtures and do not execute attack payloads.
+IntegrityWatch Lite assumes a trusted local operating system and one operator working within the synthetic `lab/` directory.
+
+HMAC-SHA256 authenticates the selected baseline using a locally stored, owner-only key. The SQLite audit log uses sequential SHA-256 hash chaining to make unauthorized changes detectable during verification.
+
+These mechanisms provide tamper evidence, not complete tamper prevention. An attacker with sufficient access to the local machine may modify the database, key, and audit records. The audit chain currently has no independent external trust anchor.
+
+The dashboard provides read-only views of stored data and has no authentication. Keep it bound to localhost. Simulations modify only disposable text fixtures and do not execute attack payloads.
 
 ## Limitations
 
-- This is a local, single-user lab tool, not an enterprise endpoint security
-  product. It monitors the controlled lab, not a complete production host.
-- Detection is limited to R01–R12 and the supported syntax in
-  [Phase 2 detection notes](docs/phase2-detection.md). The sudoers analyzer is
-  line-based, not a complete parser; it does not expand aliases, includes, or
-  full policy precedence.
-- Semantic rule matching is controlled by the Python dispatch table in
-  `integritywatch/detection.py`; rule metadata is maintained in `rules.yaml`.
+- This is a local, single-user lab tool, not an enterprise endpoint security product. It monitors the controlled lab, not a complete production host.
+- Detection is limited to R01–R12 and the supported syntax described in [Phase 2 detection notes](docs/phase2-detection.md). The sudoers analyzer is line-based, not a complete parser; it does not expand aliases, includes, or full policy precedence.
+- Semantic rule matching is controlled by the Python dispatch table in `integritywatch/detection.py`; rule metadata is maintained in `rules.yaml`.
 - Hash-only mode does not detect metadata-only changes such as SUID changes.
-- File notifications can be missed; periodic reconciliation reduces this risk
-  but does not provide forensic event history.
-- A same-user or root attacker can modify the local database and key; the audit
-  chain has no external trusted anchor and is tamper-evident, not tamper-proof.
-- The original baseline's authenticity remains unavailable because its
-  Each installation uses its own baseline and key under `data/`;
-  a missing or invalid selected key still causes verification and
-  monitoring to fail closed.
-- The evaluation set is synthetic and small. It does not estimate performance
-  against real adversaries or production filesystems.
-- The dashboard has no login or remote-access controls. Keep it bound to
-  localhost.
-- Linux/WSL filesystem, permissions, and event behavior are assumed. Windows
-  native execution is not a supported target.
+- File notifications can be missed; periodic reconciliation reduces this risk but does not provide forensic event history.
+- A same-user or root attacker can modify the local database and key. The audit chain has no external trusted anchor and is tamper-evident, not tamper-proof.
+- Each installation creates and uses its own baseline and authentication key under `data/`. A missing or invalid selected key causes verification and monitoring to fail closed.
+- The evaluation set is synthetic and small. It does not estimate performance against real adversaries or production filesystems.
+- The dashboard has no login or remote-access controls. Keep it bound to localhost.
+- Linux/WSL filesystem, permissions, and event behavior are assumed. Windows native execution is not a supported target.
