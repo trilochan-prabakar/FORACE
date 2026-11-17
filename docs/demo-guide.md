@@ -2,17 +2,16 @@
 
 ## Preparation
 
-From the project root, use the project virtual environment to check the source
-data and official V1.0 default trust anchor:
+From the project root, use the project virtual environment to check the initialized project baseline and audit database:
 
 ```bash
 venv/bin/python -B -m integritywatch verify --lab lab --mode smart
 venv/bin/python -B -m integritywatch verify-log --db data/integritywatch.db
 ```
 
-The normal project monitor uses the official V1.0 trust anchor under
-`data/recovery/new-trust-anchor/`. The preserved original baseline remains
-unauthenticated because its original key is missing. Do not reinitialize the
+The normal project monitor uses the standard baseline, key, and signature
+under `data/`. A fresh clone must first create the sandbox and initialize its
+own trust files as described in the README. Do not reinitialize existing
 project trust files during a presentation. The demo creates its own key and
 baseline in a fresh temporary directory.
 
@@ -53,11 +52,10 @@ recordings.
 | 2:40–3:15 | Show smart/hash-only counts and audit results. | Both modes detect the content edit; audit is valid before demo-only tampering and invalid after. Workspace cleanup is reported. |
 | 3:15–3:45 | Show the dashboard using retained demo paths and navigate its six sections. | Actual SQLite finding appears; tampered isolated audit database appears invalid. |
 | 3:45–4:15 | Show Evaluation page or actual `results.csv` results. Explain the small synthetic corpus and its limits. | 12/12 expected attack rules detected, 0/4 smart benign false-positive scenarios, hash-only 11/12 attacks and 3/4 benign alerts. |
-| 4:15–4:30 | Close with the key security decision and limitation. | The original project baseline's authenticity was not recovered; the separately established V1.0 anchor is used by default. |
+| 4:15–4:30 | Close with the key security decision and limitation. | The initialized project baseline is authenticated using its local HMAC key and detached signature. |
 
 If time is short, skip the retained dashboard workspace and use the CLI output;
-the default demo cleans up safely. The original baseline's authenticity was
-not recovered; current defaults use the separate official V1.0 bundle.
+the default demo cleans up safely.
 
 ## Expected demo output
 
@@ -80,7 +78,7 @@ line is absent when `--keep` is selected; that option prints the retained path.
 
 ## Screenshot checklist
 
-- [ ] Overview with actual project status, V1.0 baseline status, and audit state.
+- [ ] Overview with actual project status, baseline authentication status, and audit state.
 - [ ] Security Findings showing the actual R01 finding from the retained demo database.
 - [ ] File Integrity showing the fixed project `lab/` inventory.
 - [ ] Finding detail with explanation and ATT&CK technique reference.
@@ -100,9 +98,9 @@ line is absent when `--keep` is selected; that option prints the retained path.
 - **HMAC for baseline trust:** plain SHA-256 is not enough to authenticate a
   baseline if an attacker can replace both baseline content and hash; a
   separately protected key supplies authenticity.
-- **Separate trust anchors:** the original baseline and signature are preserved
-  but unauthenticated; the separate V1.0 bundle supplies current defaults.
-  Missing or invalid selected trust still fails closed.
+- **Per-installation trust material:** each installation creates its own
+  baseline and HMAC key. Missing or invalid selected trust fails closed.
+  Optional recovery bundles are separate from the standard CLI defaults.
 - **Descriptor-based scanning:** no-follow opens and rooted directory
   descriptors reduce symlink/path races; one file descriptor supplies both
   content and metadata.

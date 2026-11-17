@@ -28,9 +28,8 @@ venv/bin/python -B -m streamlit run dashboard.py --server.address 127.0.0.1 --se
 The dashboard opens in the browser. The sidebar paths default to the project
 database, baseline, HMAC key, signature, monitor status file, and `results.csv`.
 Change a path there to inspect a retained demo workspace or another local
-IntegrityWatch data set. The defaults select the official V1.0 baseline, key,
-and signature in `data/recovery/new-trust-anchor/`; the preserved original
-baseline is not used as the default because its original key is unavailable.
+IntegrityWatch data set. The default baseline, key, signature, and database
+paths are the standard per-installation files under `data/` (see the README).
 The File Integrity root is fixed to the project's `lab/` directory and cannot
 be changed in the dashboard.
 
@@ -44,9 +43,8 @@ venv/bin/python -B -m integritywatch watch --lab lab --mode smart
 
 Use Ctrl+C in that terminal to stop monitoring. The CLI updates
 `data/monitor_status.json` while its watch loop is running and removes its own
-heartbeat on shutdown. The default monitor uses the official V1.0 trust
-anchor. The missing original key does not authenticate the preserved original
-baseline and does not affect the separate V1.0 bundle.
+heartbeat on shutdown. The monitor uses the standard baseline, key, and
+signature paths unless explicit alternatives are supplied.
 
 ## Dashboard features
 
@@ -114,8 +112,7 @@ never show HMAC key contents.
   internal health or detect a compromised host.
 - Baseline authentication requires the correct locally protected key and
   detached signature. The dashboard reports missing or invalid files as
-  failure. The original baseline remains unauthenticated; the separate V1.0
-  bundle supplies the current default trust anchor.
+  failure. Each installation must initialize and protect its own trust files.
 - Semantic detection is limited to R01–R12 and supported syntax. The sudoers
   parser is line-based; cron suspicious markers are text matches, not shell
   analysis. Semantic rule matching is controlled by the Python dispatch table;

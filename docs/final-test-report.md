@@ -7,10 +7,13 @@
 output was written under `/tmp/integritywatch-phase6-final/`; test databases
 and demo workspaces used temporary directories.
 
-> Historical snapshot: this report records the state on 2026-11-01. On
-> 2026-11-02, V1.0 defaults were changed to the existing separately established
-> trust anchor under `data/recovery/new-trust-anchor/`; the original baseline
-> and signature described below remain preserved and unauthenticated.
+> Historical verification snapshot: the detailed checks and machine-state
+> observations in this report were recorded on 2026-11-01. They are retained
+> as historical evidence and must not be treated as current installation
+> instructions or as a description of another user's fresh clone. For current
+> defaults and setup, follow the repository README. Subsequent release
+> validation on the fresh-clone environment passed 170 automated tests and
+> completed the isolated end-to-end demo.
 
 ## Final verification results
 
@@ -108,12 +111,16 @@ streamlit run dashboard.py --server.address 127.0.0.1 --server.port 8501
 Then open `http://localhost:8501`. This workspace could not verify that network
 startup command because socket creation is blocked.
 
-## Final project file structure
+## Representative working-tree layout from the Phase 6 run
+
+This is the local working-tree layout recorded during that historical run. It
+includes generated directories such as `data/` and `lab/`, which are created
+locally and are not committed to the repository.
 
 ```text
 IntegrityWatch-Lite/
 ├── attacks/                         # 12 synthetic security changes + 4 benign scenarios
-├── data/                            # Existing baseline/signature/database; key is missing
+├── data/                            # Local per-installation trust files and SQLite database
 ├── docs/
 │   ├── architecture.md              # Component design and architecture diagram
 │   ├── data-flow.md                 # Baseline, monitor, evaluation, dashboard flows
@@ -125,10 +132,9 @@ IntegrityWatch-Lite/
 │   ├── phase4-evaluation.md         # Method, metric formulas, measured results
 │   ├── phase5-dashboard-demo.md     # Dashboard operation and screenshots
 │   ├── security-design.md           # Threat model, HMAC, hash chain, recovery
-│   └── viva-preparation.md          # Basic and difficult oral-exam Q&A
 ├── integritywatch/                  # Scanner, trust, detection, monitor, SQLite, dashboard data
 ├── lab/                             # Synthetic Linux-like files only
-├── tests/                           # Phase 1–6 unit/integration/regression tests
+├── tests/                           # Unit, integration, and regression tests from Phases 1–5
 ├── README.md                        # Setup, operation, recovery, CLI reference
 ├── dashboard.py                     # Streamlit local dashboard
 ├── demo.py                          # Isolated repeatable demonstration
@@ -139,6 +145,7 @@ IntegrityWatch-Lite/
 └── rules.yaml                       # R01–R12 rule definitions
 ```
 
-`test_store.py` at the project root is the isolated schema test. The complete
-suite has 103 passing tests across scanner, baseline, detection, authentication,
-audit, monitoring, evaluation, dashboard, demo, and database behavior.
+`tests/test_store.py` is the isolated schema test. At the time of this
+historical Phase 6 run, 103 tests passed across scanner, baseline, detection,
+authentication, audit, monitoring, evaluation, dashboard, demo, and database
+behavior. Subsequent fresh-clone release validation passed 170 tests.

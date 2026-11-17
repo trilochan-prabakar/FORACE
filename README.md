@@ -7,11 +7,10 @@ SHA-256 file scans, semantic configuration checks, a SQLite finding store with
 a hash-chained audit log, repeatable simulations, and a Streamlit dashboard.
 
 > **Scope:** this is a local, single-user teaching and evaluation tool for the
-> synthetic `lab/` directory, not an enterprise endpoint security product. The
-> Each installation creates its own baseline and trust anchor under
-> `data/`. Personal recovery bundles from the original development
-> environment are not included in this repository.
-> not recovered.
+> synthetic `lab/` directory, not an enterprise endpoint security product.
+> Each installation creates its own baseline, HMAC key, detached signature,
+> and SQLite database under `data/`. Optional recovery bundles are created
+> only through the explicit recovery workflow described below.
 
 ## Contents
 
@@ -21,7 +20,7 @@ a hash-chained audit log, repeatable simulations, and a Streamlit dashboard.
 - [Technology](#technology)
 - [Install on Linux or WSL2](#install-on-linux-or-wsl2)
 - [Create and initialize the sandbox](#create-and-initialize-the-sandbox)
-- [Original baseline and local recovery bundle](#original-baseline-and-local-recovery-bundle)
+- [Initialize and protect local trust material](#initialize-and-protect-local-trust-material)
 - [Verify and monitor](#verify-and-monitor)
 - [Dashboard](#dashboard)
 - [Simulations and evaluation](#simulations-and-evaluation)
@@ -57,7 +56,8 @@ The project aims to:
   symlinks and scan errors are reported rather than followed or mistaken for
   deletions.
 - Smart semantic checks for the supported SSH, authorized-keys, cron, passwd,
-  sudoers, systemd, authentication-log, and SUID cases in `rules.yaml`.
+  sudoers, systemd, authentication-log, and SUID cases. Matching logic is
+  implemented in `integritywatch/detection.py`; `rules.yaml` stores rule metadata.
 - Rules R01–R02 cover SSH, R03 authorized keys, R04–R05 cron, R06–R08 passwd,
   R09 sudoers, R10 SUID, R11 authentication-log loss, and R12 systemd.
 - Hash-only mode for additions, deletions, and content changes.
@@ -146,31 +146,39 @@ baseline:
 venv/bin/python -B -m integritywatch init lab
 ```
 
-The command creates a new baseline, key (mode `0600`), detached signature,
-and initializes the SQLite database. Fresh installations use their own
-trust anchor under `data/`. Existing trust data is not silently replaced;
-use `--approve-update` only when you deliberately intend to update it.
+The command creates a new baseline, owner-only HMAC key (mode `0600`),
+detached signature, and SQLite database under `data/`. Existing trust data is
+not silently replaced; use `--approve-update` only when you deliberately
+intend to update it. Exact default paths and key-handling guidance follow below.
 
-## Original baseline and local recovery bundle
+## Initialize and protect local trust material
 
-The original baseline and recovery bundle discussed during development are
-local artifacts from the original author's environment. They are not included
-in this repository. Their presence is not required to install or run a fresh
-clone.
+A fresh installation creates its own baseline, 32-byte HMAC key, detached
+signature, and SQLite database under `data/` with the `init` command above.
+The default paths are:
 
-Each installation should create and authenticate its own baseline and key
-using the `init` command above. Do not copy another installation's private key
-or recovery files into your environment. Recovery implementation details and
-limitations are described in the [security design](docs/security-design.md).
+- Baseline: `data/baseline.json`
+- HMAC key: `data/baseline.key` (owner-only permissions, `0600`)
+- Detached signature: `data/baseline.json.hmac`
+- SQLite database: `data/integritywatch.db`
 
-To verify your installation's baseline, run:
+Verify the initialized baseline with:
 
 ```bash
 venv/bin/python -B -m integritywatch verify --lab lab --mode smart
 ```
 
-Back up the new key securely. Do not replace the original trust files unless a
-separate operator-reviewed migration is intended.
+Back up the HMAC key securely and separately. Do not share it or commit it to
+Git. Existing baseline or signature files are not silently replaced; use
+`--approve-update` only after reviewing the consequences.
+
+The optional `rebaseline` command creates a separately reviewed recovery
+bundle under `data/recovery/<bundle-name>/` (the default bundle name is
+`new-trust-anchor`). This optional bundle is not the default input for
+`init`, `verify`, or `watch`; those commands use the standard paths listed
+above unless explicit paths are supplied. See the
+[security design](docs/security-design.md) for the recovery workflow and its
+limitations.
 
 ## Verify and monitor
 
@@ -279,8 +287,9 @@ See [evaluation methodology and results](docs/phase4-evaluation.md).
 When omitted, storage defaults are `data/baseline.json`, the owner-only
 `data/baseline.key`, its detached signature `data/baseline.json.hmac`, and
 `data/integritywatch.db`.
-The `rebaseline --source-*` options intentionally refer to the preserved
-original baseline and signature.
+The optional `rebaseline --source-*` options identify the source baseline and
+signature for the separately reviewed recovery workflow; they do not change
+the standard storage defaults.
 Relative paths supplied to the CLI or dashboard resolve from the project
 root, regardless of the current working directory; absolute paths are used
 unchanged.
