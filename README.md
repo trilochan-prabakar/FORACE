@@ -7,7 +7,7 @@ SHA-256 file scans, semantic configuration checks, a SQLite finding store with
 a hash-chained audit log, repeatable simulations, and a Streamlit dashboard.
 
 > **Scope:** this is a local, single-user teaching and evaluation tool for the
-> synthetic `lab/` directory, not an enterprise endpoint security product. The
+> synthetic `lab/` directory, not an enterprise endpoint security product.
 > Each installation creates its own baseline, HMAC key, detached signature,
 > and SQLite database under `data/`. Optional recovery bundles are created
 > only through the explicit recovery workflow described below.
