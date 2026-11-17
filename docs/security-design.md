@@ -50,18 +50,22 @@ does not encrypt the baseline. If both baseline and key are available to an
 attacker, the attacker can produce a new valid signature. A lost key cannot be
 reconstructed from the signature.
 
-### Original baseline and V1.0 trust anchor
+### Default trust files and optional recovery workflow
 
-The preserved original `data/baseline.json` and
-`data/baseline.json.hmac` have no matching original key at
-`data/baseline.key`; their authenticity remains unavailable. Never create a
-key and sign those old bytes automatically. The official V1.0 defaults instead
-select the separately established bundle in `data/recovery/new-trust-anchor/`.
-Its key is owner-only (`0600`) and the detached HMAC authenticates that bundle.
-This is a new trust anchor, not recovery of the original baseline's
-authenticity. Keep the original artifacts unchanged. Any future trust-anchor
-migration requires a separate operator review; do not rerun initialization or
-recovery over the existing bundle.
+The standard CLI defaults are `data/baseline.json`,
+`data/baseline.key`, `data/baseline.json.hmac`, and
+`data/integritywatch.db`. A fresh installation creates its own baseline,
+owner-only HMAC key, detached signature, and database with
+`python -m integritywatch init lab`. The `verify` and `watch` commands use
+these same standard paths unless the operator supplies explicit alternatives.
+
+The optional `python -m integritywatch rebaseline` workflow creates a
+separate recovery bundle beneath `data/recovery/` (default bundle name:
+`new-trust-anchor`). It is an explicit, operator-reviewed workflow and does
+not silently change the standard defaults used by `init`, `verify`, or
+`watch`. Keep recovery material private and protect its key with owner-only
+permissions. See the CLI help and recovery implementation for its review
+requirements and limitations.
 
 ## SHA-256 hash-chained audit log
 
