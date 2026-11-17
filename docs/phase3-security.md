@@ -33,6 +33,15 @@ python -m integritywatch verify-log
 python -m integritywatch report
 ```
 
-The original project baseline and signature remain preserved without their original key, so their authenticity is unavailable. CLI verification and monitoring now default to the separate official V1.0 trust anchor under `data/recovery/new-trust-anchor/`. This bundle authenticates the current controlled lab but does not recover the original baseline's authenticity. On a fresh project with no baseline or signature, use `python -m integritywatch init lab`. Use `--baseline`, `--key`, `--signature`, and `--db` to select storage paths. When `--signature` is omitted, it defaults to `<baseline>.hmac`. `verify-log` prints `valid`, `empty`, `invalid`, or `error`, with the first invalid record where applicable.
+The standard CLI defaults are `data/baseline.json`, `data/baseline.key`,
+`data/baseline.json.hmac`, and `data/integritywatch.db`. On a fresh project
+with no baseline or signature, create the sandbox and use
+`python -m integritywatch init lab` to generate per-installation trust
+material. Use `--baseline`, `--key`, `--signature`, and `--db` to select
+alternative storage paths. When `--signature` is omitted, it defaults to
+`<baseline>.hmac`. The optional `rebaseline` workflow creates a separate
+reviewed bundle under `data/recovery/`; it does not change the standard
+defaults. `verify-log` prints `valid`, `empty`, `invalid`, or `error`, with
+the first invalid record where applicable.
 
 The existing Phase 2 sudoers parser and suspicious-cron command marker limitations are documented in [phase2-detection.md](phase2-detection.md).
