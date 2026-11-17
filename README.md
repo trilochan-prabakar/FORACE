@@ -1,5 +1,10 @@
 # IntegrityWatch Lite
 
+<div align="center">
+  <a href="https://trilochan-prabakar.github.io/trilochan-prabakar/"><img src="https://img.shields.io/badge/PORTFOLIO-Trilochan%20Prabakar-0E7490?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Portfolio website" /></a>
+  <a href="https://github.com/trilochan-prabakar"><img src="https://img.shields.io/badge/GITHUB-Developer%20Profile-164E63?style=for-the-badge&logo=github&logoColor=white" alt="GitHub profile" /></a>
+</div>
+
 IntegrityWatch Lite is a local file-integrity monitor for a controlled Linux-like
 lab. It records what changed and explains supported security-relevant changes
 with rules, severity, and MITRE ATT&CK references. It combines a signed baseline,
