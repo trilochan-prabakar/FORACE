@@ -7,10 +7,13 @@
 output was written under `/tmp/integritywatch-phase6-final/`; test databases
 and demo workspaces used temporary directories.
 
-> Historical snapshot: this report records the state on 2026-11-01. On
-> 2026-11-02, V1.0 defaults were changed to the existing separately established
-> trust anchor under `data/recovery/new-trust-anchor/`; the original baseline
-> and signature described below remain preserved and unauthenticated.
+> Historical verification snapshot: the detailed checks and machine-state
+> observations in this report were recorded on 2026-11-01. They are retained
+> as historical evidence and must not be treated as current installation
+> instructions or as a description of another user's fresh clone. For current
+> defaults and setup, follow the repository README. Subsequent release
+> validation on the fresh-clone environment passed 170 automated tests and
+> completed the isolated end-to-end demo.
 
 ## Final verification results
 
@@ -113,7 +116,7 @@ startup command because socket creation is blocked.
 ```text
 IntegrityWatch-Lite/
 ├── attacks/                         # 12 synthetic security changes + 4 benign scenarios
-├── data/                            # Existing baseline/signature/database; key is missing
+├── data/                            # Local per-installation trust files and SQLite database
 ├── docs/
 │   ├── architecture.md              # Component design and architecture diagram
 │   ├── data-flow.md                 # Baseline, monitor, evaluation, dashboard flows
@@ -139,6 +142,6 @@ IntegrityWatch-Lite/
 └── rules.yaml                       # R01–R12 rule definitions
 ```
 
-`test_store.py` at the project root is the isolated schema test. The complete
+`tests/test_store.py` is the isolated schema test. The complete
 suite has 103 passing tests across scanner, baseline, detection, authentication,
 audit, monitoring, evaluation, dashboard, demo, and database behavior.
