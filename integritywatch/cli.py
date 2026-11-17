@@ -107,6 +107,9 @@ def _initialize(args):
 
 
 def _verify(args):
+    audit = verify_audit_chain(args.db)
+    if audit["status"] not in {"valid", "empty"}:
+        raise RuntimeError(f"Audit verification failed: {audit['message']}")
     root = _require_lab_directory(args.lab)
     signature_path = args.signature or f"{args.baseline}.hmac"
     baseline = load_authenticated_baseline(args.baseline, args.key, signature_path)
@@ -114,7 +117,12 @@ def _verify(args):
         raise ValueError("Authenticated baseline root does not match --lab")
     current = scan_directory(root)
     findings = compare_scans(baseline, current, mode=args.mode)
-    print(json.dumps({"mode": args.mode, "findings": findings, "scan_errors": current["errors"]}, indent=2))
+    print(json.dumps({"mode": args.mode, "findings": findings, "scan_errors": current["errors"],
+                      "audit": audit}, indent=2))
+    if current["errors"]:
+        return 3
+    if findings:
+        return 2
     return 0
 
 

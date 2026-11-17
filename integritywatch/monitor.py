@@ -13,7 +13,7 @@ from watchdog.observers import Observer
 from integritywatch.auth import load_authenticated_baseline
 from integritywatch.detection import compare_scans
 from integritywatch.scanner import scan_directory
-from integritywatch.store import canonical_json, initialize_database, store_finding_once, verify_audit_chain
+from integritywatch.store import canonical_json, initialize_database, store_finding_once, verify_audit_chain, clear_inactive_findings
 
 
 TEMP_SUFFIXES = {".swp", ".tmp", ".temp", ".part", ".lock"}
@@ -78,14 +78,9 @@ class IntegrityMonitor(FileSystemEventHandler):
         with self._scan_lock:
             baseline = self._trusted_baseline()
             current = scan_result if scan_result is not None else scan_directory(self.root)
-            baseline_files = {path: value for path, value in baseline["files"].items()
-                              if not self._temporary(path)}
-            current = {"files": {path: value for path, value in current.get("files", {}).items()
-                                 if not self._temporary(path)},
-                       "errors": {path: value for path, value in current.get("errors", {}).items()
-                                  if not self._temporary(path)}}
-            findings = compare_scans({**baseline, "files": baseline_files}, current, mode=self.mode)
+            findings = compare_scans(baseline, current, mode=self.mode)
             stored = []
+            active_fingerprints = []
             for finding in findings:
                 entry = current.get("files", {}).get(finding["file_path"], {})
                 fingerprint_payload = canonical_json({
@@ -94,8 +89,10 @@ class IntegrityMonitor(FileSystemEventHandler):
                     "baseline_sha256": baseline["files"].get(finding["file_path"], {}).get("sha256"),
                 }).encode("utf-8")
                 fingerprint = hashlib.sha256(fingerprint_payload).hexdigest()
+                active_fingerprints.append(fingerprint)
                 if store_finding_once(self.db_path, finding, fingerprint):
                     stored.append(finding)
+            clear_inactive_findings(self.db_path, active_fingerprints)
             self.last_error = None
             return stored
 

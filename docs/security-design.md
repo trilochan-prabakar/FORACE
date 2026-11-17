@@ -122,3 +122,8 @@ SQLite files there. Simulators write only configuration-like text or
 metadata; they do not invoke cron, sudo, systemd, sshd, account tools, network
 clients, or persistence mechanisms. Demo audit tampering is limited to its
 temporary SQLite file, which is discarded by default.
+
+
+## Known limitations
+
+The audit log is an unkeyed SHA-256 hash chain; audit records do not have per-record HMACs or an external trusted checkpoint. A privileged or same-user attacker able to rewrite the database and recompute the chain can defeat this evidence. The baseline HMAC key is owner-only, but the local threat model assumes an attacker cannot simultaneously replace the key, baseline, and database. Monitoring thread scheduling, watchdog event delivery, debounce, and heartbeat edge cases remain limitations. Semantic analysis covers six supported file types only: SSH daemon configuration, authorized keys, crontab, passwd, sudoers, and systemd service files. Linux/WSL is supported; the dashboard has no authentication and must remain localhost-only.

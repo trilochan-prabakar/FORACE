@@ -210,6 +210,11 @@ venv/bin/python -B -m integritywatch report --db data/integritywatch.db
 `verify-log` returns `empty`, `valid`, `invalid`, or `error`. An empty chain is
 not shown as verified by the dashboard because there are no records to check.
 
+The `verify` command uses these process exit codes: `0` = clean verification,
+`2` = one or more findings, `3` = one or more scan errors, and `1` = baseline
+trust or audit verification failure. Scan errors take precedence over the
+finding status.
+
 ## Dashboard
 
 Run the dashboard from the project root:
@@ -317,13 +322,13 @@ The dashboard provides read-only views of stored data and has no authentication.
 
 ## Limitations
 
-- This is a local, single-user lab tool, not an enterprise endpoint security product. It monitors the controlled lab, not a complete production host.
-- Detection is limited to R01–R12 and the supported syntax described in [Phase 2 detection notes](docs/phase2-detection.md). The sudoers analyzer is line-based, not a complete parser; it does not expand aliases, includes, or full policy precedence.
-- Semantic rule matching is controlled by the Python dispatch table in `integritywatch/detection.py`; rule metadata is maintained in `rules.yaml`.
+- This is a local, single-user lab tool, not an enterprise endpoint security product. It monitors the controlled `lab/` directory, not a complete production host.
+- Detection is limited to exactly R01–R12 and the supported syntax described in [Phase 2 detection notes](docs/phase2-detection.md). The sudoers analyzer recognizes include directives but is not a complete sudoers policy parser; aliases, nested include expansion, and full policy precedence are out of scope.
+- The audit log uses an **unkeyed SHA-256 hash chain**. Audit records do not have individual HMAC authentication or an external trusted checkpoint. It detects accidental edits and many unsophisticated tampering attempts, but a capable attacker who can rewrite the database and recompute the chain can defeat it.
+- The baseline is HMAC-authenticated with an owner-only local key. The threat model is single-user: an attacker who can edit the key, baseline, and database together can defeat the local trust model.
+- Monitoring uses a watchdog thread plus periodic reconciliation. Thread scheduling, event delivery, debounce, and heartbeat edge cases can delay or miss transient changes; periodic scans reduce but do not eliminate this limitation.
+- Only six configuration/content types receive semantic analysis: SSH daemon configuration, authorized keys, crontab, passwd, sudoers, and systemd service files. Other files receive generic integrity findings.
+- Linux and WSL are the supported environments. Native Windows execution is not supported.
+- The Streamlit dashboard has no authentication. Keep it bound to localhost and do not expose it to an untrusted network.
 - Hash-only mode does not detect metadata-only changes such as SUID changes.
-- File notifications can be missed; periodic reconciliation reduces this risk but does not provide forensic event history.
-- A same-user or root attacker can modify the local database and key. The audit chain has no external trusted anchor and is tamper-evident, not tamper-proof.
-- Each installation creates and uses its own baseline and authentication key under `data/`. A missing or invalid selected key causes verification and monitoring to fail closed.
-- The evaluation set is synthetic and small. It does not estimate performance against real adversaries or production filesystems.
-- The dashboard has no login or remote-access controls. Keep it bound to localhost.
-- Linux/WSL filesystem, permissions, and event behavior are assumed. Windows native execution is not a supported target.
+- The evaluation set remains the original 12 synthetic attack scenarios (one authored for each R01–R12) and four benign scenarios. New evasion-focused regressions are tested separately and are not included in `results.csv`; the evaluation does not estimate performance against real adversaries or production filesystems.

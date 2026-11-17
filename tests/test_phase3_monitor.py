@@ -59,7 +59,7 @@ def test_outside_events_and_symlinks_are_not_followed(tmp_path):
     assert monitor.handle_event("modified", outside) == []
     link = root / "link.txt"
     link.symlink_to(outside)
-    assert monitor.handle_event("created", link) == []
+    assert any(item["change_type"] == "symlink_added" for item in monitor.handle_event("created", link))
     assert outside.read_text(encoding="utf-8") == "secret"
 
 
@@ -68,7 +68,7 @@ def test_temporary_files_are_ignored_until_reconciliation(tmp_path):
     temporary = root / ".write.tmp"
     temporary.write_text("partial", encoding="utf-8")
     assert monitor.handle_event("created", temporary) == []
-    assert monitor.reconcile_once() == []
+    assert any(item["file_path"] == ".write.tmp" for item in monitor.reconcile_once())
 
 
 def test_directory_event_scans_new_children(tmp_path):
@@ -102,7 +102,8 @@ def test_reconciliation_detects_deleted_and_new_files(tmp_path):
 def test_inaccessible_path_is_not_reported_as_deleted(tmp_path):
     monitor, root, _ = make_monitor(tmp_path, debounce=0)
     result = {"files": {}, "errors": {"sample.txt": "permission denied"}}
-    assert monitor.reconcile_once(scan_result=result) == []
+    findings = monitor.reconcile_once(scan_result=result)
+    assert {item["change_type"] for item in findings} >= {"unreadable", "deleted"}
 
 
 def test_hash_only_monitor_persists_plain_change_without_semantics(tmp_path):
@@ -238,3 +239,39 @@ def test_real_watchdog_observer_detects_a_lab_change(tmp_path):
         assert found
     finally:
         monitor.stop()
+
+
+def test_replacing_baseline_file_with_symlink_persists_error_and_deletion(tmp_path):
+    monitor, root, db = make_monitor(tmp_path, debounce=0)
+    target = root / "sample.txt"
+    outside = tmp_path / "outside-key"
+    outside.write_text("not followed", encoding="utf-8")
+    target.unlink()
+    target.symlink_to(outside)
+
+    findings = monitor.reconcile_once()
+    assert {item["change_type"] for item in findings} >= {"symlink_replaced", "deleted"}
+    with sqlite3.connect(db) as connection:
+        rows = connection.execute(
+            "SELECT change_type, severity FROM findings WHERE file_path = ?",
+            ("sample.txt",),
+        ).fetchall()
+    assert ("symlink_replaced", "High") in rows
+    assert ("deleted", None) in rows
+
+
+def test_attack_recurrence_is_recorded_after_returning_to_baseline(tmp_path):
+    monitor, root, db = make_monitor(tmp_path, debounce=0)
+    sample = root / "sample.txt"
+    baseline_text = sample.read_text(encoding="utf-8")
+    attacked = baseline_text + "second line\n"
+
+    sample.write_text(attacked, encoding="utf-8")
+    assert monitor.reconcile_once()
+    sample.write_text(baseline_text, encoding="utf-8")
+    assert monitor.reconcile_once() == []
+    sample.write_text(attacked, encoding="utf-8")
+    assert monitor.reconcile_once()
+    with sqlite3.connect(db) as connection:
+        count = connection.execute("SELECT COUNT(*) FROM findings WHERE file_path='sample.txt'").fetchone()[0]
+    assert count == 2

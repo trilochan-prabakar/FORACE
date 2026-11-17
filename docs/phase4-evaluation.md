@@ -34,3 +34,7 @@ The corpus is deliberately small: one deterministic scenario per rule and four b
 ## Actual run
 
 The executed 16-scenario run detected the expected rule in **12 of 12 attack scenarios** (detection rate 1.000, false-negative rate 0.000). Smart mode handled **4 of 4 benign scenarios** without alerts (scenario-level false-positive rate 0.000). Hash-only mode detected a content change in **11 of 12 attacks** and alerted on **3 of 4 benign edits**; R10 changed metadata without changing file content, so hash-only did not detect it. Every R01–R12 scenario was detected (one scenario per rule), and explanation and ATT&CK mapping coverage were each 1.000. These are measured results for this specific synthetic corpus, not projected real-world performance.
+
+## Evaluation scope note
+
+The checked-in evaluation set remains the original 12 synthetic attack scenarios (one authored to exercise each rule R01–R12) and four benign scenarios. It has not been expanded with dedicated evasion cases for symlink replacement, recurring attacks, temporary-file handling, sudoers include directives, or rsync command lookalikes. Those behaviors have focused regression tests, but are not included in the published evaluation metrics. Do not interpret the existing CSV as a measurement of those additional cases.

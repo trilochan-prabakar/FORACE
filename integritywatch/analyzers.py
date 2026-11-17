@@ -1,17 +1,41 @@
 """Conservative semantic analyzers for the supported lab configuration formats."""
 import re
+import shlex
 
 
-def _active_lines(text):
-    return [line.strip() for line in (text or "").splitlines()
-            if line.strip() and not line.lstrip().startswith(("#", ";"))]
+def _active_lines(text, *, format_name="generic"):
+    """Return active lines using format-specific comment rules.
+
+    Sudoers #include/#includedir/@include/@includedir are directives, not comments.
+    Semicolon comments are recognized only for systemd unit files.
+    """
+    active = []
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if format_name == "sudoers":
+            if line.startswith("#") and not re.match(r"#\s*include(?:dir)?\b", line, re.I):
+                continue
+            if line.startswith("@") and not re.match(r"@include(?:dir)?\b", line, re.I):
+                continue
+        elif line.startswith("#"):
+            continue
+        elif format_name == "systemd" and line.startswith(";"):
+            continue
+        active.append(line)
+    return active
 
 
 def analyze_sshd(old, new):
     def parse(text):
         values = {}
         for line in _active_lines(text):
-            parts = line.split()
+            normalized = re.sub(r"^([^\s=]+)\s*=\s*", r"\1 ", line, count=1)
+            try:
+                parts = shlex.split(normalized, comments=False, posix=True)
+            except ValueError:
+                continue
             if len(parts) > 1:
                 values.setdefault(parts[0].lower(), parts[1].lower())
         return values
@@ -28,9 +52,10 @@ def changed_sshd_security_settings(old, new):
     def values(text):
         result = {}
         for line in _active_lines(text):
-            fields = line.split(None, 1)
+            normalized = re.sub(r"^([^\s=]+)\s*=\s*", r"\1 ", line, count=1)
+            fields = normalized.split(None, 1)
             if len(fields) == 2 and fields[0].lower() in security_keys:
-                result.setdefault(fields[0].lower(), " ".join(fields[1].split()).lower())
+                result.setdefault(fields[0].lower(), " ".join(fields[1].strip('\"\'').split()).lower())
         return result
     before, after = values(old), values(new)
     return sorted(key for key in security_keys if before.get(key) != after.get(key) and key in before.keys() | after.keys())
@@ -67,8 +92,9 @@ def _cron(text):
 def analyze_crontab(old, new):
     old_entries, new_entries = _cron(old), _cron(new)
     added = sorted(new_entries - old_entries)
-    suspicious = [line for line in added if any(token in line.lower() for token in
-                  ("curl ", "wget ", "nc ", "/dev/tcp", "base64 -d", "python -c", "perl -e"))]
+    suspicious = [line for line in added if any(re.search(pattern, line.lower()) for pattern in
+                  (r"\bcurl\b\s+", r"\bwget\b\s+", r"\bnc\b\s+",
+                   r"/dev/tcp", r"\bbase64\b\s+-d\b", r"\bpython\b\s+-c\b", r"\bperl\b\s+-e\b"))]
     return {"added": added, "removed": sorted(old_entries - new_entries), "suspicious": suspicious}
 
 
@@ -92,15 +118,15 @@ def analyze_passwd(old, new):
                             if name != "root" and fields[2] == "0" and
                             (name not in before or before[name][2] != "0")),
         "service_shell": sorted(name for name, fields in after.items()
-                                 if name in before and name.startswith(("svc", "service", "daemon"))
-                                 and before[name][6] in ("/usr/sbin/nologin", "/bin/false")
-                                 and fields[6] in ("/bin/bash", "/bin/sh", "/bin/zsh")),
+                                 if name in before
+                                 and before[name][6].lower() in ("/usr/sbin/nologin", "/sbin/nologin", "/bin/nologin", "/bin/false", "")
+                                 and fields[6].lower() not in ("/usr/sbin/nologin", "/sbin/nologin", "/bin/nologin", "/bin/false", "")),
     }
 
 
 def analyze_sudoers(old, new):
     def lines(text):
-        return {" ".join(line.split()) for line in _active_lines(text)}
+        return {" ".join(line.split()) for line in _active_lines(text, format_name="sudoers")}
     before, after = lines(old), lines(new)
     added, removed = sorted(after - before), sorted(before - after)
     is_admin = lambda line: re.search(r"(?<![A-Za-z0-9_])ALL(?![A-Za-z0-9_])", line, re.IGNORECASE) is not None
@@ -113,7 +139,7 @@ def analyze_systemd(old, new):
     def normalized(text):
         # systemd keys are case-insensitive; values remain case-sensitive.
         lines = []
-        for line in _active_lines(text):
+        for line in _active_lines(text, format_name="systemd"):
             if "=" in line:
                 key, value = line.split("=", 1)
                 lines.append(f"{key.strip().lower()}={value.strip()}")

@@ -1,7 +1,7 @@
 # Phase 6 final audit and verification report
 
-**Run date:** 2026-11-01  
-**Scope:** Phase 1–5 code audit, Phase 6 security hardening and documentation.  
+**Historical run date:** 2026-11-01
+**Scope:** Phase 1–5 code audit, Phase 6 security hardening and documentation.
 **Project data:** no project baseline, signature, key, lab file, database row, or
 `results.csv` was intentionally changed by Phase 6 verification. Evaluation
 output was written under `/tmp/integritywatch-phase6-final/`; test databases
@@ -11,23 +11,22 @@ and demo workspaces used temporary directories.
 > observations in this report were recorded on 2026-11-01. They are retained
 > as historical evidence and must not be treated as current installation
 > instructions or as a description of another user's fresh clone. For current
-> defaults and setup, follow the repository README. Subsequent release
-> validation on the fresh-clone environment passed 170 automated tests and
-> completed the isolated end-to-end demo.
+> defaults and setup, follow the repository README. No current full-suite
+> result is asserted by this historical report.
 
 ## Final verification results
 
 | Check | Command or evidence | Result |
 |---|---|---|
-| Complete suite | `python -m pytest -q` | **103 passed** |
-| Python compilation | `python -m compileall -q integritywatch attacks tests dashboard.py demo.py evaluate.py make_lab.py test_baseline.py test_scanner.py test_store.py` | Passed; exit 0 |
-| Scanner script | `python test_scanner.py` | 7 files scanned, 0 errors |
+| Complete suite | `python -m pytest -q` | Historical result from 2026-11-01: 103 passed; not a current release-validation result |
+| Python compilation | `python -m compileall -q integritywatch attacks tests dashboard.py demo.py evaluate.py make_lab.py` | Passed; exit 0 |
+| Scanner script | `python -m pytest -q tests/test_scanner.py` | 7 files scanned, 0 errors |
 | Scanner tests | Included in full suite; descriptor traversal, static symlinks, symlink swap, and `..` path escape covered | Passed |
-| Baseline script | `python test_baseline.py` | Temporary baseline save/load and overwrite protection passed |
+| Baseline script | `python -m pytest -q tests/test_baseline.py` | Temporary baseline save/load and overwrite protection passed |
 | HMAC tests | `tests/test_phase3_auth.py` in Phase 3 focused run | Passed; temporary key/signature fixtures verified, malformed/tampered/missing trust rejected |
-| Database/audit tests | Phase 3 focused run and `test_store.py` | Passed; schema, repeatable initialization, write-path symlink refusal, hash-chain integrity and fail-closed append covered |
+| Database/audit tests | Phase 3 focused run and `tests/test_store.py` | Passed; schema, repeatable initialization, write-path symlink refusal, hash-chain integrity and fail-closed append covered |
 | Smart detection | `python -m pytest -q tests/test_phase2.py` | **21 passed** |
-| Phase 3 auth/audit/database | `python -m pytest -q tests/test_phase3_auth.py tests/test_phase3_audit.py test_store.py` | **24 passed** |
+| Phase 3 auth/audit/database | `python -m pytest -q tests/test_phase3_auth.py tests/test_phase3_audit.py tests/test_store.py` | **24 passed** |
 | Evaluation framework | `python evaluate.py --output-dir /tmp/integritywatch-phase6-final` | 16 scenarios executed; report and CSV generated |
 | Raw evaluation cross-check | Recounted `/tmp/integritywatch-phase6-final/results.csv` and compared with dashboard metric loader | 12/12 expected smart attack detections; 0/4 smart benign alerts; 11 hash-only attack detections; 3 hash-only benign alerts; counts agree |
 | Dashboard | Streamlit AppTest on Overview, Findings, Evaluation, and Integrity; includes missing database case | All pages rendered without application exceptions |
@@ -145,7 +144,9 @@ IntegrityWatch-Lite/
 └── rules.yaml                       # R01–R12 rule definitions
 ```
 
-`tests/test_store.py` is the isolated schema test. At the time of this
-historical Phase 6 run, 103 tests passed across scanner, baseline, detection,
-authentication, audit, monitoring, evaluation, dashboard, demo, and database
-behavior. Subsequent fresh-clone release validation passed 170 tests.
+`tests/test_store.py` is the isolated schema test. The 103-test result above is retained only as a historical snapshot. Run the current suite from the repository root with `python make_lab.py && python -m pytest -q`; this report does not claim a fresh full-suite result.
+
+
+## Final-pass validation note (2026-11-17)
+
+The final-pass working environment did not have `watchdog` or `streamlit` installed, and outbound package installation was unavailable. The focused regression and core integration set passed **129 tests** when run with a temporary watchdog API stub; one real-watchdog observer test was deselected because the real package was unavailable. The Streamlit AppTest modules could not be collected. `python -m compileall -q integritywatch attacks tests dashboard.py demo.py evaluate.py make_lab.py` completed successfully. An unmodified `python -m pytest -q` stopped at collection with missing `watchdog` and `streamlit` imports. Run `python make_lab.py && python -m pytest -q` in the project's WSL Ubuntu virtual environment, where the requirements are installed, before treating the release as fully verified.

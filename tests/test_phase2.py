@@ -156,9 +156,10 @@ def test_new_sgid_bit_is_detected_as_generic_metadata_finding():
     assert any(item["change_type"] == "sgid_enabled" for item in compare_scans(base, now, mode="smart"))
 
 
-def test_inaccessible_baseline_path_is_not_reported_deleted_and_traversal_rejected():
+def test_inaccessible_baseline_path_is_reported_as_error_and_deleted_and_traversal_rejected():
     e = {"sha256": "a" * 64}
-    assert compare_scans({"files": {"keep": e}}, {"files": {}, "errors": {"keep": "permission denied"}}) == []
+    findings = compare_scans({"files": {"keep": e}}, {"files": {}, "errors": {"keep": "permission denied"}})
+    assert {item["change_type"] for item in findings} == {"unreadable", "deleted"}
     import pytest
     with pytest.raises(ValueError, match="outside the lab"):
         compare_scans({"files": {"../outside": e}}, {"files": {}, "errors": {}})

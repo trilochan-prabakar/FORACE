@@ -63,6 +63,10 @@ def _verify_audit_connection(connection):
             if sequence and sequence["seq"] > 0:
                 return {"status": "invalid", "valid": False, "records_checked": 0,
                         "record_id": 1, "message": "Missing genesis record; audit rows may have been deleted"}
+            findings_count = connection.execute("SELECT COUNT(*) FROM findings").fetchone()[0]
+            if findings_count:
+                return {"status": "invalid", "valid": False, "records_checked": 0,
+                        "record_id": None, "message": "Findings table contains rows without audited finding records"}
             return {"status": "empty", "valid": True, "records_checked": 0,
                     "record_id": None, "message": "Audit chain is empty"}
         previous_hash = GENESIS_HASH
@@ -101,8 +105,29 @@ def _verify_audit_connection(connection):
         if sequence and sequence["seq"] != records[-1]["id"]:
             return {"status": "invalid", "valid": False, "records_checked": len(records),
                     "record_id": sequence["seq"], "message": "Sequence tail mismatch: one or more trailing records are missing"}
+        audit_findings = []
+        for record in records:
+            if record["event_type"] == "finding":
+                try:
+                    payload = json.loads(record["record_data"])
+                    if "finding" not in payload:
+                        continue
+                    finding = payload["finding"]
+                    audit_findings.append((record["timestamp_utc"], finding.get("file_path"),
+                        finding.get("change_type"), finding.get("rule_id"), finding.get("severity"),
+                        finding.get("attack_id"), finding.get("explanation")))
+                except (KeyError, TypeError, json.JSONDecodeError):
+                    return {"status": "invalid", "valid": False, "records_checked": len(records),
+                            "record_id": record["id"], "message": "Malformed finding audit record"}
+        table_findings = connection.execute(
+            "SELECT timestamp_utc, file_path, change_type, rule_id, severity, attack_id, explanation "
+            "FROM findings ORDER BY id").fetchall()
+        stored = [tuple(row) for row in table_findings]
+        if stored != audit_findings:
+            return {"status": "invalid", "valid": False, "records_checked": len(records),
+                    "record_id": None, "message": "Findings table does not match audited finding records"}
         return {"status": "valid", "valid": True, "records_checked": len(records),
-                "record_id": None, "message": "Audit chain is valid"}
+                "record_id": None, "message": "Audit chain and findings table are valid"}
     except sqlite3.Error as error:
         return {"status": "error", "valid": False, "records_checked": 0,
                 "record_id": None, "message": f"Database access or corruption error: {error}"}
@@ -148,11 +173,12 @@ def store_finding_once(db_path, finding, fingerprint):
     try:
         connection.execute("BEGIN IMMEDIATE")
         _require_valid_audit_connection(connection)
-        exists = connection.execute(
-            "SELECT 1 FROM audit_log WHERE event_type = 'finding' AND record_data = ? LIMIT 1",
-            (audit_data,),
+        prior = connection.execute(
+            "SELECT event_type FROM audit_log WHERE event_type IN ('finding', 'finding_cleared') "
+            "AND json_extract(record_data, '$.fingerprint') = ? ORDER BY id DESC LIMIT 1",
+            (fingerprint,),
         ).fetchone()
-        if exists:
+        if prior and prior["event_type"] == "finding":
             connection.commit()
             return False
         connection.execute(
@@ -163,6 +189,35 @@ def store_finding_once(db_path, finding, fingerprint):
         _append_audit_in_transaction(connection, "finding", audit_data, timestamp)
         connection.commit()
         return True
+    except BaseException:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+
+def clear_inactive_findings(db_path, active_fingerprints):
+    """Record transitions out of the active state so a later recurrence is reportable."""
+    active = set(active_fingerprints)
+    connection = get_connection(db_path)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        _require_valid_audit_connection(connection)
+        rows = connection.execute(
+            "SELECT event_type, record_data FROM audit_log "
+            "WHERE event_type IN ('finding', 'finding_cleared') ORDER BY id"
+        ).fetchall()
+        latest = {}
+        for row in rows:
+            data = json.loads(row["record_data"])
+            latest[data["fingerprint"]] = row["event_type"]
+        for fingerprint, state in latest.items():
+            if state == "finding" and fingerprint not in active:
+                timestamp = datetime.now(timezone.utc).isoformat()
+                _append_audit_in_transaction(connection, "finding_cleared",
+                                             canonical_json({"fingerprint": fingerprint}), timestamp)
+        connection.commit()
     except BaseException:
         connection.rollback()
         raise

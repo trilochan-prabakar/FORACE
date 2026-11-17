@@ -112,3 +112,19 @@ def test_init_requires_approval_when_signature_exists_without_baseline(tmp_path,
     assert not key.exists()
     assert signature.read_text(encoding="utf-8") == "orphaned signature\n"
     assert "approve-update" in capsys.readouterr().err.lower()
+
+
+def test_verify_exit_codes_distinguish_findings_and_scan_errors(tmp_path, capsys):
+    root = tmp_path / "lab"
+    root.mkdir()
+    target = root / "sample.txt"
+    target.write_text("baseline", encoding="utf-8")
+    common = ["--baseline", str(tmp_path / "baseline.json"), "--key", str(tmp_path / "key"),
+              "--signature", str(tmp_path / "sig"), "--db", str(tmp_path / "state.db")]
+    assert main(["init", str(root), *common]) == 0
+    target.write_text("changed", encoding="utf-8")
+    assert main(["verify", "--lab", str(root), *common]) == 2
+    target.unlink()
+    target.symlink_to(tmp_path / "outside")
+    assert main(["verify", "--lab", str(root), *common]) == 3
+    capsys.readouterr()
