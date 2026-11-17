@@ -300,11 +300,16 @@ def _sidebar(paths, statuses):
     st.sidebar.markdown('<div class="iw-brand">◈ &nbsp;IntegrityWatch <span>Lite</span></div>', unsafe_allow_html=True)
     st.sidebar.caption("File Integrity Monitoring Console")
     st.sidebar.markdown("**WORKSPACE**")
+
     for label, key, icon in PAGES:
-        if st.sidebar.button(f"{icon}   {label}", key=key,
-                             type="primary" if st.session_state.get("iw_page", "Overview") == label else "secondary",
-                             width="stretch"):
-            st.session_state["iw_page"] = label
+        st.sidebar.button(
+    		f"{icon}  {label}",
+    		key=key,
+    		type="primary" if st.session_state.get("iw_page", "Overview") == label else "secondary",
+    		width="stretch",
+    		on_click=lambda selected_page=label: st.session_state.update({"iw_page": selected_page}),
+	)
+
     st.sidebar.markdown("**SYSTEM STATUS**")
     for name, state in (("Database", statuses["database"]), ("Baseline", statuses["baseline"]),
                         ("Audit chain", statuses["audit"]), ("Monitoring", statuses["monitor"])):
