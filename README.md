@@ -146,10 +146,10 @@ baseline:
 venv/bin/python -B -m integritywatch init lab
 ```
 
-The command creates a new baseline, key (mode `0600`), detached signature,
-and initializes the SQLite database. Fresh installations use their own
-trust anchor under `data/`. Existing trust data is not silently replaced;
-use `--approve-update` only when you deliberately intend to update it.
+The command creates a new baseline, owner-only HMAC key (mode `0600`),
+detached signature, and SQLite database under `data/`. Existing trust data is
+not silently replaced; use `--approve-update` only when you deliberately
+intend to update it. Exact default paths and key-handling guidance follow below.
 
 ## Initialize and protect local trust material
 
