@@ -35,7 +35,7 @@ def test_default_paths_stay_with_project_when_launched_elsewhere(tmp_path, monke
     monkeypatch.chdir(tmp_path)
 
     assert dashboard._default_paths() == {
-        "db": str(project_root / "data/integritywatch.db"),
+        "db": str(project_root / "data/forace.db"),
         "baseline": str(project_root / "data/baseline.json"),
         "key": str(project_root / "data/baseline.key"),
         "signature": str(project_root / "data/baseline.json.hmac"),
@@ -44,7 +44,7 @@ def test_default_paths_stay_with_project_when_launched_elsewhere(tmp_path, monke
         "root": str(project_root / "lab"),
     }
     app = AppTest.from_file(project_root / "dashboard.py", default_timeout=20).run()
-    assert app.sidebar.text_input(key="iw_db_path").value == str(project_root / "data/integritywatch.db")
+    assert app.sidebar.text_input(key="iw_db_path").value == str(project_root / "data/forace.db")
     assert app.sidebar.text_input(key="iw_baseline_path").value == str(
         project_root / "data/baseline.json"
     )
@@ -195,7 +195,7 @@ def test_all_six_pages_render_and_navigation_switches_page():
 def test_dashboard_view_does_not_modify_baseline_or_database():
     root = Path(__file__).resolve().parents[1]
     protected = [root / "data/baseline.json", root / "data/baseline.key",
-                 root / "data/baseline.json.hmac", root / "data/integritywatch.db",
+                 root / "data/baseline.json.hmac", root / "data/forace.db",
                  root / "data/monitor_status.json"]
 
     before = {path: (path.read_bytes() if path.exists() else None) for path in protected}
