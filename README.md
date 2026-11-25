@@ -165,13 +165,8 @@ The default paths are:
 - Baseline: `data/baseline.json`
 - HMAC key: `data/baseline.key` (owner-only permissions, `0600`)
 - Detached signature: `data/baseline.json.hmac`
-- SQLite database: `data/forace.db` for a fresh install. Existing installations
-  continue using `data/FORACE.db` when it is present.
-
-FORACE selects the existing database when only one name is present. If both
-`data/FORACE.db` and `data/forace.db` exist, database commands require
-an explicit `--db` path; no history is merged or selected silently. Existing
-database files are opened in place and are never renamed or migrated.
+- SQLite database: `data/forace.db` by default. Use `--db` only when
+  deliberately selecting a separate database.
 
 Verify the initialized baseline with:
 
