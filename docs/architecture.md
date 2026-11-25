@@ -8,7 +8,7 @@
 | Scanner | Safely enumerate regular files, hash content, capture metadata and small text snapshots | `forace/scanner.py` |
 | Baseline | Validate/store the file map and root identity | `forace/baseline.py` |
 | Trust layer | Generate owner-only HMAC key, sign exact baseline bytes, authenticate before parsing | `forace/auth.py` |
-| Detection | Compare file sets/content/metadata and run supported semantic analyzers | `forace/detection.py`, `analyzers.py`, `rules.py`, `rules.yaml` |
+| Detection | Compare file sets/content/metadata and run supported semantic analyzers | `forace/detection.py`, `forace/analyzers.py`, `forace/rules.py`, `rules.yaml` |
 | Monitor | Watchdog notifications, event debounce, scans, periodic reconciliation, finding persistence | `forace/monitor.py`, `cli.py` |
 | Storage | SQLite finding rows and sequential hash-chained audit entries | `forace/store.py` |
 | Evaluation | Fresh isolated scenario copies, smart/hash-only comparisons, metrics and CSV/report | `attacks/`, `evaluate.py` |
