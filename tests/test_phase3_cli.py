@@ -10,7 +10,7 @@ from forace.store import initialize_database, verify_audit_chain
 
 def test_cli_default_paths_use_project_root_outside_project_directory(tmp_path, monkeypatch, capsys):
     project_root = Path(__file__).resolve().parents[1]
-    expected = verify_audit_chain(project_root / "data/integritywatch.db")
+    expected = verify_audit_chain(project_root / "data/forace.db")
     monkeypatch.chdir(tmp_path)
 
     result = main(["verify-log"])
@@ -28,22 +28,17 @@ def test_default_verify_uses_fresh_install_paths():
     assert args.signature is None
 
 
-def test_cli_requires_explicit_database_when_both_names_exist(tmp_path, monkeypatch, capsys):
+def test_cli_uses_forace_database_even_when_old_database_file_exists(tmp_path, monkeypatch, capsys):
     from forace import paths
 
     monkeypatch.setattr(paths, "PROJECT_ROOT", tmp_path)
     data = tmp_path / "data"
     data.mkdir()
     (data / "integritywatch.db").touch()
-    (data / "forace.db").touch()
+    initialize_database(data / "forace.db")
 
-    try:
-        main(["verify-log"])
-    except SystemExit as error:
-        assert error.code == 2
-    else:
-        raise AssertionError("CLI did not require explicit database selection")
-    assert "explicit --db" in capsys.readouterr().err
+    assert main(["verify-log"]) == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "empty"
 
 
 def test_cli_uses_explicit_database_when_both_names_exist(tmp_path, monkeypatch, capsys):
