@@ -6,7 +6,7 @@ import sys
 
 import pytest
 
-from integritywatch import recovery
+from forace import recovery
 
 
 PHRASE = recovery.CONFIRMATION_PHRASE
@@ -243,7 +243,7 @@ def test_process_crash_before_or_after_commit_never_publishes_partial_bundle(rec
     lab, baseline, signature, _, recovery_dir, _ = inputs
     recovery_dir.mkdir(mode=0o700)
     script = r'''import os, sys
-from integritywatch import recovery
+from forace import recovery
 real = recovery._rename_bundle_noreplace
 after = sys.argv[5] == "after"
 def crash(parent, stage, bundle):

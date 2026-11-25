@@ -3,8 +3,8 @@
 ## Architecture
 
 `dashboard.py` is a read-only Streamlit interface. Its data access layer in
-`integritywatch/dashboard_data.py` opens SQLite in read-only mode, checks the
-IntegrityWatch schema, reads actual finding rows, invokes the existing
+`forace/dashboard_data.py` opens SQLite in read-only mode, checks the
+FORACE schema, reads actual finding rows, invokes the existing
 baseline-HMAC and audit-chain verifiers, checks the monitor heartbeat, and
 recalculates evaluation metrics from the Phase 4 CSV. A missing or invalid
 source is reported as such; the interface does not manufacture example
@@ -28,7 +28,7 @@ venv/bin/python -B -m streamlit run dashboard.py --server.address 127.0.0.1 --se
 The dashboard opens in the browser. The sidebar paths default to the project
 database, baseline, HMAC key, signature, monitor status file, and `results.csv`.
 Change a path there to inspect a retained demo workspace or another local
-IntegrityWatch data set. The default baseline, key, signature, and database
+FORACE data set. The default baseline, key, signature, and database
 paths are the standard per-installation files under `data/` (see the README).
 The File Integrity root is fixed to the project's `lab/` directory and cannot
 be changed in the dashboard.
@@ -38,7 +38,7 @@ project's normal CLI when you want live findings and the configured baseline
 authenticates successfully:
 
 ```bash
-venv/bin/python -B -m integritywatch watch --lab lab --mode smart
+venv/bin/python -B -m forace watch --lab lab --mode smart
 ```
 
 Use Ctrl+C in that terminal to stop monitoring. The CLI updates

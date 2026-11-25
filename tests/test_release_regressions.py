@@ -3,9 +3,9 @@ import os
 import sqlite3
 from pathlib import Path
 
-from integritywatch.analyzers import analyze_crontab, analyze_passwd, analyze_sshd, analyze_sudoers
-from integritywatch.detection import compare_scans
-from integritywatch.store import (
+from forace.analyzers import analyze_crontab, analyze_passwd, analyze_sshd, analyze_sudoers
+from forace.detection import compare_scans
+from forace.store import (
     clear_inactive_findings, initialize_database, store_finding_once, verify_audit_chain,
 )
 

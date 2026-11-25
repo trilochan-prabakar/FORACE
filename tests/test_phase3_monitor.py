@@ -5,10 +5,10 @@ import pytest
 
 from watchdog.events import FileModifiedEvent, FileMovedEvent
 
-from integritywatch.auth import generate_key, sign_baseline
-from integritywatch.baseline import create_baseline, save_baseline
-from integritywatch.monitor import IntegrityMonitor
-from integritywatch.store import initialize_database, verify_audit_chain
+from forace.auth import generate_key, sign_baseline
+from forace.baseline import create_baseline, save_baseline
+from forace.monitor import IntegrityMonitor
+from forace.store import initialize_database, verify_audit_chain
 
 
 def make_monitor(tmp_path, *, mode="smart", debounce=0.15):

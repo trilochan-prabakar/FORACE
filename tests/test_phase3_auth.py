@@ -2,8 +2,8 @@ import os
 
 import pytest
 
-from integritywatch.auth import generate_key, load_key, load_authenticated_baseline, sign_baseline, verify_baseline_signature
-from integritywatch.baseline import create_baseline, save_baseline
+from forace.auth import generate_key, load_key, load_authenticated_baseline, sign_baseline, verify_baseline_signature
+from forace.baseline import create_baseline, save_baseline
 
 
 def test_hmac_signatures_verify_exact_baseline_bytes(tmp_path):

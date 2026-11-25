@@ -25,18 +25,20 @@ This is tamper-evident logging, not tamper-proof storage. A privileged attacker 
 From the project directory:
 
 ```bash
-python -m integritywatch init lab
-python -m integritywatch verify --mode smart
-python -m integritywatch verify --mode hash-only
-python -m integritywatch watch --mode smart --debounce 0.5 --interval 30
-python -m integritywatch verify-log
-python -m integritywatch report
+python -m forace init lab
+python -m forace verify --mode smart
+python -m forace verify --mode hash-only
+python -m forace watch --mode smart --debounce 0.5 --interval 30
+python -m forace verify-log
+python -m forace report
 ```
 
-The standard CLI defaults are `data/baseline.json`, `data/baseline.key`,
-`data/baseline.json.hmac`, and `data/integritywatch.db`. On a fresh project
-with no baseline or signature, create the sandbox and use
-`python -m integritywatch init lab` to generate per-installation trust
+The standard baseline defaults are `data/baseline.json`, `data/baseline.key`,
+and `data/baseline.json.hmac`. Database selection preserves existing installs:
+use `data/integritywatch.db` when it is the only existing database, use
+`data/forace.db` on a fresh install, and supply `--db` if both exist. No
+database is renamed or migrated. On a fresh project with no baseline or signature, create the sandbox and use
+`python -m forace init lab` to generate per-installation trust
 material. Use `--baseline`, `--key`, `--signature`, and `--db` to select
 alternative storage paths. When `--signature` is omitted, it defaults to
 `<baseline>.hmac`. The optional `rebaseline` workflow creates a separate

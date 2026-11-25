@@ -22,11 +22,11 @@ trust artifacts.
 
 ## Analyzer scope and limits
 
-The analyzers consume UTF-8 snapshots from the controlled lab. They do not open system configuration paths. `sshd_config` handles the security directives listed in `integritywatch/analyzers.py`; authorized keys are compared by key algorithm and key blob so comments and whitespace do not look like new keys. Cron analysis supports system crontab entries and a conservative list of suspicious command markers. Passwd analysis parses seven colon-separated fields. Systemd analysis normalizes comments and surrounding whitespace while preserving directive values.
+The analyzers consume UTF-8 snapshots from the controlled lab. They do not open system configuration paths. `sshd_config` handles the security directives listed in `forace/analyzers.py`; authorized keys are compared by key algorithm and key blob so comments and whitespace do not look like new keys. Cron analysis supports system crontab entries and a conservative list of suspicious command markers. Passwd analysis parses seven colon-separated fields. Systemd analysis normalizes comments and surrounding whitespace while preserving directive values.
 
 The sudoers analyzer supports line-based rules and detects added or removed lines containing the `ALL` privilege token, plus newly added `NOPASSWD:` rules. It is deliberately not a full sudoers parser. It does not expand `User_Alias`, `Runas_Alias`, `Host_Alias`, or `Cmnd_Alias`; it does not evaluate Defaults, include directives, tags other than detecting `NOPASSWD:`, negation, command argument matching, or precedence. Such constructs may require human review and can produce incomplete results. Comments and whitespace-only differences are ignored for the supported line subset.
 
-Semantic rule dispatch is controlled by the `SEMANTIC_DISPATCH` table in `integritywatch/detection.py`. Each entry matches a supported lab-relative
+Semantic rule dispatch is controlled by the `SEMANTIC_DISPATCH` table in `forace/detection.py`. Each entry matches a supported lab-relative
 path and invokes its corresponding analyzer. Rule metadata is maintained separately in `rules.yaml`.
 
 Generic rename detection is limited to unique old/new paths with an identical SHA-256 digest. Duplicate-content files are reported as separate additions and deletions because their rename correspondence is ambiguous. A scan error for a previously known path is not treated as deletion.

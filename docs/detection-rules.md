@@ -3,7 +3,7 @@
 The detector compares two lab scans and loads rule metadata from `rules.yaml`.
 The analyzers are intentionally conservative parsers for a narrow subset of
 Linux-style configuration formats. A technique ID is contextual mapping for a
-change type; it is not proof of adversary activity or a claim that IntegrityWatch
+change type; it is not proof of adversary activity or a claim that FORACE
 implements full ATT&CK analytics.
 
 | Rule | Detected change | Detection behavior | Severity | ATT&CK mapping |
@@ -39,7 +39,7 @@ change findings rather than a named rule.
 ## Analyzer limits
 
 - SSH analysis handles the supported directives listed in
-  `integritywatch/analyzers.py`; it is not a complete OpenSSH parser and does
+  `forace/analyzers.py`; it is not a complete OpenSSH parser and does
   not evaluate `Include` files or all `Match` blocks.
 - Authorized-key comparison extracts supported key algorithm/blob fields and
   records option changes, but does not validate key cryptography or evaluate

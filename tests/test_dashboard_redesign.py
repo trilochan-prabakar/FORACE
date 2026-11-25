@@ -13,13 +13,13 @@ _dashboard_spec = importlib.util.spec_from_file_location(
 )
 dashboard = importlib.util.module_from_spec(_dashboard_spec)
 _dashboard_spec.loader.exec_module(dashboard)
-from integritywatch.auth import generate_key, sign_baseline
-from integritywatch.baseline import create_baseline, save_baseline
-from integritywatch.dashboard_data import load_file_inventory, sort_findings
-import integritywatch.dashboard_data as dashboard_data
-from integritywatch.scanner import scan_directory
-from integritywatch.store import initialize_database, store_finding_once, verify_audit_chain
-from integritywatch.monitor_status import write_monitor_status
+from forace.auth import generate_key, sign_baseline
+from forace.baseline import create_baseline, save_baseline
+from forace.dashboard_data import load_file_inventory, sort_findings
+import forace.dashboard_data as dashboard_data
+from forace.scanner import scan_directory
+from forace.store import initialize_database, store_finding_once, verify_audit_chain
+from forace.monitor_status import write_monitor_status
 
 
 def test_project_paths_resolve_relative_values_from_dashboard_directory(tmp_path, monkeypatch):
@@ -184,7 +184,7 @@ def test_all_six_pages_render_and_navigation_switches_page():
         ("Audit & Verification", "nav_audit_and_verification", "Audit & Verification"),
         ("Evaluation", "nav_evaluation", "Detection Performance & Evaluation"),
         ("Demo / About", "nav_demo_about", "Project Overview"),
-        ("Overview", "nav_overview", "IntegrityWatch Lite"),
+        ("Overview", "nav_overview", "FORACE"),
     ]
     for label, key, page_heading in pages:
         app.sidebar.button(key=key).click().run()

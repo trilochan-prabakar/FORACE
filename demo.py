@@ -9,12 +9,12 @@ from pathlib import Path
 
 from attacks.R01_permit_root_login import apply as apply_r01
 from evaluate import _isolation_marker
-from integritywatch.auth import generate_key, load_authenticated_baseline, sign_baseline
-from integritywatch.baseline import create_baseline, save_baseline
-from integritywatch.detection import compare_scans
-from integritywatch.monitor import IntegrityMonitor
-from integritywatch.scanner import scan_directory
-from integritywatch.store import initialize_database, verify_audit_chain
+from forace.auth import generate_key, load_authenticated_baseline, sign_baseline
+from forace.baseline import create_baseline, save_baseline
+from forace.detection import compare_scans
+from forace.monitor import IntegrityMonitor
+from forace.scanner import scan_directory
+from forace.store import initialize_database, verify_audit_chain
 
 
 def _read_findings(db_path):
@@ -120,7 +120,7 @@ def run_demo(source_lab="lab", *, keep=False):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Run the safe IntegrityWatch Lite demonstration")
+    parser = argparse.ArgumentParser(description="Run the safe FORACE demonstration")
     parser.add_argument("--lab", default="lab", help="Synthetic source lab directory (copied; never modified)")
     parser.add_argument("--keep", action="store_true", help="Keep the isolated temporary workspace to inspect it in the dashboard")
     args = parser.parse_args(argv)

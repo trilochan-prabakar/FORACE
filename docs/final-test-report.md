@@ -19,7 +19,7 @@ and demo workspaces used temporary directories.
 | Check | Command or evidence | Result |
 |---|---|---|
 | Complete suite | `python -m pytest -q` | Historical result from 2026-11-01: 103 passed; not a current release-validation result |
-| Python compilation | `python -m compileall -q integritywatch attacks tests dashboard.py demo.py evaluate.py make_lab.py` | Passed; exit 0 |
+| Python compilation | `python -m compileall -q integritywatch attacks tests dashboard.py demo.py evaluate.py make_lab.py` | Passed; exit 0 (historical pre-refactor run) |
 | Scanner script | `python -m pytest -q tests/test_scanner.py` | 7 files scanned, 0 errors |
 | Scanner tests | Included in full suite; descriptor traversal, static symlinks, symlink swap, and `..` path escape covered | Passed |
 | Baseline script | `python -m pytest -q tests/test_baseline.py` | Temporary baseline save/load and overwrite protection passed |
@@ -58,7 +58,7 @@ Observed from the actual project paths after verification:
 - Audit chain: **empty**, with 0 records; no records were available to verify.
 - Monitor: not running; no heartbeat file is present.
 - Evaluation CSV: available and loaded.
-- `python -m integritywatch verify --lab lab --mode smart` and the same command
+- `python -m forace verify --lab lab --mode smart` and the same command
   with `--mode hash-only` both exit 1 with the missing-key error. This is
   expected fail-closed behavior, not a detection result.
 - The project baseline/key/signature were not reinitialized. Safe options are
@@ -117,7 +117,7 @@ includes generated directories such as `data/` and `lab/`, which are created
 locally and are not committed to the repository.
 
 ```text
-IntegrityWatch-Lite/
+FORACE/
 ├── attacks/                         # 12 synthetic security changes + 4 benign scenarios
 ├── data/                            # Local per-installation trust files and SQLite database
 ├── docs/
@@ -131,7 +131,7 @@ IntegrityWatch-Lite/
 │   ├── phase4-evaluation.md         # Method, metric formulas, measured results
 │   ├── phase5-dashboard-demo.md     # Dashboard operation and screenshots
 │   ├── security-design.md           # Threat model, HMAC, hash chain, recovery
-├── integritywatch/                  # Scanner, trust, detection, monitor, SQLite, dashboard data
+├── forace/                  # Scanner, trust, detection, monitor, SQLite, dashboard data
 ├── lab/                             # Synthetic Linux-like files only
 ├── tests/                           # Unit, integration, and regression tests from Phases 1–5
 ├── README.md                        # Setup, operation, recovery, CLI reference
@@ -149,4 +149,4 @@ IntegrityWatch-Lite/
 
 ## Final-pass validation note (2026-11-17)
 
-The final-pass working environment did not have `watchdog` or `streamlit` installed, and outbound package installation was unavailable. The focused regression and core integration set passed **129 tests** when run with a temporary watchdog API stub; one real-watchdog observer test was deselected because the real package was unavailable. The Streamlit AppTest modules could not be collected. `python -m compileall -q integritywatch attacks tests dashboard.py demo.py evaluate.py make_lab.py` completed successfully. An unmodified `python -m pytest -q` stopped at collection with missing `watchdog` and `streamlit` imports. Run `python make_lab.py && python -m pytest -q` in the project's WSL Ubuntu virtual environment, where the requirements are installed, before treating the release as fully verified.
+The final-pass working environment for that earlier report did not have `watchdog` or `streamlit` installed, and outbound package installation was unavailable. The focused regression and core integration set passed **129 tests** when run with a temporary watchdog API stub; one real-watchdog observer test was deselected because the real package was unavailable. The Streamlit AppTest modules could not be collected. Compilation completed successfully. Those results predate the FORACE package refactor; see the current validation report for this refactor's checks.

@@ -104,7 +104,7 @@ def create_lab(force=False):
 
         print(f"[CREATED] {file_path}")
 
-    print("\nIntegrityWatch Lite sandbox created successfully.")
+    print("\nFORACE sandbox created successfully.")
     print(f"Total files generated: {len(SAMPLE_FILES)}")
 
     return True
@@ -112,7 +112,7 @@ def create_lab(force=False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate the IntegrityWatch Lite sandbox."
+        description="Generate the FORACE sandbox."
     )
 
     parser.add_argument(

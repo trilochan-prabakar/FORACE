@@ -62,7 +62,7 @@ The project aims to:
   deletions.
 - Smart semantic checks for the supported SSH, authorized-keys, cron, passwd,
   sudoers, systemd, authentication-log, and SUID cases. Matching logic is
-  implemented in `integritywatch/detection.py`; `rules.yaml` stores rule metadata.
+  implemented in `forace/detection.py`; `rules.yaml` stores rule metadata.
 - Rules R01–R02 cover SSH, R03 authorized keys, R04–R05 cron, R06–R08 passwd,
   R09 sudoers, R10 SUID, R11 authentication-log loss, and R12 systemd.
 - Hash-only mode for additions, deletions, and content changes.
@@ -148,7 +148,7 @@ On a fresh project with no baseline or signature, create and authenticate a
 baseline:
 
 ```bash
-venv/bin/python -B -m integritywatch init lab
+venv/bin/python -B -m forace init lab
 ```
 
 The command creates a new baseline, owner-only HMAC key (mode `0600`),
@@ -165,12 +165,18 @@ The default paths are:
 - Baseline: `data/baseline.json`
 - HMAC key: `data/baseline.key` (owner-only permissions, `0600`)
 - Detached signature: `data/baseline.json.hmac`
-- SQLite database: `data/integritywatch.db`
+- SQLite database: `data/forace.db` for a fresh install. Existing installations
+  continue using `data/integritywatch.db` when it is present.
+
+FORACE selects the existing database when only one name is present. If both
+`data/integritywatch.db` and `data/forace.db` exist, database commands require
+an explicit `--db` path; no history is merged or selected silently. Existing
+database files are opened in place and are never renamed or migrated.
 
 Verify the initialized baseline with:
 
 ```bash
-venv/bin/python -B -m integritywatch verify --lab lab --mode smart
+venv/bin/python -B -m forace verify --lab lab --mode smart
 ```
 
 Back up the HMAC key securely and separately. Do not share it or commit it to
@@ -190,14 +196,14 @@ limitations.
 Compare the current lab to the authenticated baseline:
 
 ```bash
-venv/bin/python -B -m integritywatch verify --lab lab --mode smart
-venv/bin/python -B -m integritywatch verify --lab lab --mode hash-only
+venv/bin/python -B -m forace verify --lab lab --mode smart
+venv/bin/python -B -m forace verify --lab lab --mode hash-only
 ```
 
 Start event monitoring plus periodic reconciliation:
 
 ```bash
-venv/bin/python -B -m integritywatch watch --lab lab --mode smart --debounce 0.5 --interval 30
+venv/bin/python -B -m forace watch --lab lab --mode smart --debounce 0.5 --interval 30
 ```
 
 Stop with Ctrl+C. The CLI writes a local heartbeat while monitoring and removes
@@ -208,8 +214,8 @@ also refuses any attempt to append a finding to an invalid chain.
 Verify the audit chain without changing the database, or print stored findings:
 
 ```bash
-venv/bin/python -B -m integritywatch verify-log --db data/integritywatch.db
-venv/bin/python -B -m integritywatch report --db data/integritywatch.db
+venv/bin/python -B -m forace verify-log
+venv/bin/python -B -m forace report
 ```
 
 `verify-log` returns `empty`, `valid`, `invalid`, or `error`. An empty chain is
@@ -288,15 +294,19 @@ See [evaluation methodology and results](docs/phase4-evaluation.md).
 
 | Command | Purpose | Common options |
 |---|---|---|
-| `venv/bin/python -B -m integritywatch init lab` | Create/authenticate baseline and initialize database | `--baseline`, `--key`, `--signature`, `--db`, `--approve-update` |
-| `venv/bin/python -B -m integritywatch verify` | Compare authenticated baseline to current lab | `--lab`, `--mode smart\|hash-only`, storage options |
-| `venv/bin/python -B -m integritywatch watch` | Watch events and reconcile periodically | `--lab`, `--mode`, `--debounce`, `--interval`, storage options |
-| `venv/bin/python -B -m integritywatch verify-log` | Read-only audit-chain check | `--db` |
-| `venv/bin/python -B -m integritywatch report` | Print stored finding rows as JSON | `--db` |
+| `venv/bin/python -B -m forace init lab` | Create/authenticate baseline and initialize database | `--baseline`, `--key`, `--signature`, `--db`, `--approve-update` |
+| `venv/bin/python -B -m forace verify` | Compare authenticated baseline to current lab | `--lab`, `--mode smart\|hash-only`, storage options |
+| `venv/bin/python -B -m forace watch` | Watch events and reconcile periodically | `--lab`, `--mode`, `--debounce`, `--interval`, storage options |
+| `venv/bin/python -B -m forace verify-log` | Read-only audit-chain check | `--db` |
+| `venv/bin/python -B -m forace report` | Print stored finding rows as JSON | `--db` |
 
 When omitted, storage defaults are `data/baseline.json`, the owner-only
-`data/baseline.key`, its detached signature `data/baseline.json.hmac`, and
-`data/integritywatch.db`.
+`data/baseline.key`, its detached signature `data/baseline.json.hmac`, and the
+database selected by the compatibility rules above. Use `--db` to select a
+database explicitly.
+The renamed package is `forace`; the old `integritywatch` imports and
+`python -m integritywatch` entry point remain available as compatibility
+aliases.
 The optional `rebaseline --source-*` options identify the source baseline and
 signature for the separately reviewed recovery workflow; they do not change
 the standard storage defaults.

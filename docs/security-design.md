@@ -52,14 +52,18 @@ reconstructed from the signature.
 
 ### Default trust files and optional recovery workflow
 
-The standard CLI defaults are `data/baseline.json`,
-`data/baseline.key`, `data/baseline.json.hmac`, and
-`data/integritywatch.db`. A fresh installation creates its own baseline,
+The standard baseline defaults are `data/baseline.json`,
+`data/baseline.key`, and `data/baseline.json.hmac`. Database selection
+preserves existing installations: if only `data/integritywatch.db` exists, it
+remains the selected database; if neither database exists, new installations
+use `data/forace.db`. If both names exist, the operator must choose with
+`--db`. The compatibility logic does not rename, copy, merge, or migrate
+either database. A fresh installation creates its own baseline,
 owner-only HMAC key, detached signature, and database with
-`python -m integritywatch init lab`. The `verify` and `watch` commands use
+`python -m forace init lab`. The `verify` and `watch` commands use
 these same standard paths unless the operator supplies explicit alternatives.
 
-The optional `python -m integritywatch rebaseline` workflow creates a
+The optional `python -m forace rebaseline` workflow creates a
 separate recovery bundle beneath `data/recovery/` (default bundle name:
 `new-trust-anchor`). It is an explicit, operator-reviewed workflow and does
 not silently change the standard defaults used by `init`, `verify`, or

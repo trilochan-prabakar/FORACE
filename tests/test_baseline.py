@@ -1,4 +1,4 @@
-from integritywatch.baseline import create_baseline, save_baseline, load_baseline
+from forace.baseline import create_baseline, save_baseline, load_baseline
 
 
 def test_baseline_save_load_and_overwrite_protection(tmp_path):

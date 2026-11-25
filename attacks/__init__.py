@@ -1,1 +1,1 @@
-"""Isolated, non-executing IntegrityWatch scenario simulations."""
+"""Isolated, non-executing FORACE scenario simulations."""

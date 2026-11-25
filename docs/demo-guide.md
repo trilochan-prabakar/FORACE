@@ -5,8 +5,8 @@
 From the project root, use the project virtual environment to check the initialized project baseline and audit database:
 
 ```bash
-venv/bin/python -B -m integritywatch verify --lab lab --mode smart
-venv/bin/python -B -m integritywatch verify-log --db data/integritywatch.db
+venv/bin/python -B -m forace verify --lab lab --mode smart
+venv/bin/python -B -m forace verify-log
 ```
 
 The normal project monitor uses the standard baseline, key, and signature
@@ -45,7 +45,7 @@ recordings.
 
 | Time | Presenter action and talk track | Expected result |
 |---|---|---|
-| 0:00–0:35 | State the problem: hashes detect differences but do not explain what the change means. Introduce IntegrityWatch as a local monitor for a synthetic Linux-like lab. | Emphasize bounded project scope; no host settings are changed. |
+| 0:00–0:35 | State the problem: hashes detect differences but do not explain what the change means. Introduce FORACE as a local monitor for a synthetic Linux-like lab. | Emphasize bounded project scope; no host settings are changed. |
 | 0:35–1:05 | Show the architecture: scanner, HMAC baseline, semantic rules, monitor/reconciliation, SQLite audit chain, dashboard, evaluation. | Describe the data path in one sentence: authenticate, scan, compare, explain, persist. |
 | 1:05–2:00 | Run `venv/bin/python -B demo.py`. Point out temporary lab copy, fresh baseline authentication, and Watchdog start. | Step 1: HMAC verified, zero initial findings. Step 2: monitor starts on isolated copy. |
 | 2:00–2:40 | Show the R01 safe text edit and the printed result. | Rule R01, High severity, `T1021.004`, plain-English SSH root-login explanation. No SSH service is restarted. |

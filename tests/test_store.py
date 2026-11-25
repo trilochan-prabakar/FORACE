@@ -1,6 +1,6 @@
 import sqlite3
 
-from integritywatch.store import initialize_database
+from forace.store import initialize_database
 
 
 def test_database_schema_and_repeatable_initialization(tmp_path):

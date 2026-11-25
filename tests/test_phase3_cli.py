@@ -3,9 +3,9 @@ import os
 import sqlite3
 from pathlib import Path
 
-from integritywatch.auth import load_authenticated_baseline
-from integritywatch.cli import _parser, main
-from integritywatch.store import initialize_database, verify_audit_chain
+from forace.auth import load_authenticated_baseline
+from forace.cli import _parser, main
+from forace.store import initialize_database, verify_audit_chain
 
 
 def test_cli_default_paths_use_project_root_outside_project_directory(tmp_path, monkeypatch, capsys):
@@ -26,6 +26,39 @@ def test_default_verify_uses_fresh_install_paths():
     assert args.baseline == "data/baseline.json"
     assert args.key == "data/baseline.key"
     assert args.signature is None
+
+
+def test_cli_requires_explicit_database_when_both_names_exist(tmp_path, monkeypatch, capsys):
+    from forace import paths
+
+    monkeypatch.setattr(paths, "PROJECT_ROOT", tmp_path)
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "integritywatch.db").touch()
+    (data / "forace.db").touch()
+
+    try:
+        main(["verify-log"])
+    except SystemExit as error:
+        assert error.code == 2
+    else:
+        raise AssertionError("CLI did not require explicit database selection")
+    assert "explicit --db" in capsys.readouterr().err
+
+
+def test_cli_uses_explicit_database_when_both_names_exist(tmp_path, monkeypatch, capsys):
+    from forace import paths
+
+    monkeypatch.setattr(paths, "PROJECT_ROOT", tmp_path)
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "integritywatch.db").touch()
+    (data / "forace.db").touch()
+    selected = tmp_path / "chosen.sqlite"
+    initialize_database(selected)
+
+    assert main(["verify-log", "--db", str(selected)]) == 0
+    assert json.loads(capsys.readouterr().out)["status"] == "empty"
 
 def test_cli_relative_custom_paths_use_project_root(tmp_path, monkeypatch, capsys):
     project_root = Path(__file__).resolve().parents[1]

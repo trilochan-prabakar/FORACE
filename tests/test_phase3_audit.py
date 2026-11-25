@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from integritywatch.store import (
+from forace.store import (
     append_audit_record, calculate_record_hash, initialize_database,
     store_finding_once, verify_audit_chain,
 )

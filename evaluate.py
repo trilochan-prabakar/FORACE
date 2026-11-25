@@ -8,10 +8,10 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from integritywatch.auth import generate_key, load_authenticated_baseline, sign_baseline
-from integritywatch.baseline import create_baseline, save_baseline
-from integritywatch.detection import compare_scans
-from integritywatch.scanner import scan_directory
+from forace.auth import generate_key, load_authenticated_baseline, sign_baseline
+from forace.baseline import create_baseline, save_baseline
+from forace.detection import compare_scans
+from forace.scanner import scan_directory
 
 
 @dataclass(frozen=True)
@@ -157,7 +157,7 @@ def _write_results(rows, metrics, output_directory):
         writer.writeheader()
         writer.writerows(rows)
     report = [
-        "# IntegrityWatch Lite Phase 4 Evaluation",
+        "# FORACE Phase 4 Evaluation",
         "",
         "## Metrics and definitions",
         "",

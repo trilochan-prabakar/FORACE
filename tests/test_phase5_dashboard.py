@@ -4,16 +4,16 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from integritywatch.auth import generate_key, sign_baseline
-from integritywatch.baseline import create_baseline, save_baseline
-from integritywatch.dashboard_data import (
+from forace.auth import generate_key, sign_baseline
+from forace.baseline import create_baseline, save_baseline
+from forace.dashboard_data import (
     filter_findings, get_audit_status, get_baseline_status,
     get_database_status, get_monitor_status, load_evaluation_results,
     load_audit_events, load_findings,
 )
-import integritywatch.dashboard_data as dashboard_data
-from integritywatch.monitor_status import write_monitor_status
-from integritywatch.store import initialize_database, store_finding_once
+import forace.dashboard_data as dashboard_data
+from forace.monitor_status import write_monitor_status
+from forace.store import initialize_database, store_finding_once
 from streamlit.testing.v1 import AppTest
 
 

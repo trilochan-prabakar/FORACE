@@ -1,3 +1,6 @@
-from integritywatch.cli import main
+"""Keep ``python -m integritywatch`` working for existing users."""
+from forace.cli import main
 
-raise SystemExit(main())
+
+if __name__ == "__main__":
+    raise SystemExit(main())

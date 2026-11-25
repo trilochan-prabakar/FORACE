@@ -1,10 +1,10 @@
-from integritywatch.analyzers import (
+from forace.analyzers import (
     analyze_sshd, analyze_authorized_keys, analyze_crontab,
     analyze_passwd, analyze_sudoers, analyze_systemd,
 )
-from integritywatch.rules import load_rules
-from integritywatch.detection import compare_scans
-from integritywatch.scanner import scan_directory
+from forace.rules import load_rules
+from forace.detection import compare_scans
+from forace.scanner import scan_directory
 
 
 def test_sshd_detects_security_value_but_ignores_comments_and_case():
@@ -251,7 +251,7 @@ def test_smart_falls_back_for_invalid_utf8_semantic_file_without_snapshot(tmp_pa
 
 
 def test_smart_falls_back_when_semantic_analyzer_raises(monkeypatch):
-    import integritywatch.detection as detection
+    import forace.detection as detection
 
     def fail_analyzer(*_args):
         raise RuntimeError("unsupported crontab input")

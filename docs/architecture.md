@@ -5,15 +5,15 @@
 | Component | Responsibility | Main files |
 |---|---|---|
 | Sandbox | Synthetic Linux-like configuration and log fixtures | `lab/`, `make_lab.py` |
-| Scanner | Safely enumerate regular files, hash content, capture metadata and small text snapshots | `integritywatch/scanner.py` |
-| Baseline | Validate/store the file map and root identity | `integritywatch/baseline.py` |
-| Trust layer | Generate owner-only HMAC key, sign exact baseline bytes, authenticate before parsing | `integritywatch/auth.py` |
-| Detection | Compare file sets/content/metadata and run supported semantic analyzers | `integritywatch/detection.py`, `analyzers.py`, `rules.py`, `rules.yaml` |
-| Monitor | Watchdog notifications, event debounce, scans, periodic reconciliation, finding persistence | `integritywatch/monitor.py`, `cli.py` |
-| Storage | SQLite finding rows and sequential hash-chained audit entries | `integritywatch/store.py` |
+| Scanner | Safely enumerate regular files, hash content, capture metadata and small text snapshots | `forace/scanner.py` |
+| Baseline | Validate/store the file map and root identity | `forace/baseline.py` |
+| Trust layer | Generate owner-only HMAC key, sign exact baseline bytes, authenticate before parsing | `forace/auth.py` |
+| Detection | Compare file sets/content/metadata and run supported semantic analyzers | `forace/detection.py`, `analyzers.py`, `rules.py`, `rules.yaml` |
+| Monitor | Watchdog notifications, event debounce, scans, periodic reconciliation, finding persistence | `forace/monitor.py`, `cli.py` |
+| Storage | SQLite finding rows and sequential hash-chained audit entries | `forace/store.py` |
 | Evaluation | Fresh isolated scenario copies, smart/hash-only comparisons, metrics and CSV/report | `attacks/`, `evaluate.py` |
 | Demo | End-to-end R01 demonstration with isolated tamper simulation | `demo.py` |
-| Dashboard | Read-only status, finding, audit-event, and evaluation views | `dashboard.py`, `integritywatch/dashboard_data.py` |
+| Dashboard | Read-only status, finding, audit-event, and evaluation views | `dashboard.py`, `forace/dashboard_data.py` |
 
 ## Data flow
 
@@ -97,11 +97,12 @@ or invalid data source never produces invented findings.
 ## Workspace file layout
 
 ```text
-IntegrityWatch-Lite/
+FORACE/
 ├── attacks/                  # Isolated synthetic scenarios
 ├── data/                     # Local baseline, key, signature, SQLite, heartbeat
 ├── docs/                     # Architecture, security, evaluation, demo and viva
-├── integritywatch/           # Scanner, baseline, detection, monitor and storage
+├── forace/                   # Scanner, baseline, detection, monitor and storage
+├── integritywatch/           # Backward-compatible imports and module entry point
 ├── lab/                      # Synthetic Linux-like test tree
 ├── tests/                    # Phase 1–6 regression and integration tests
 ├── dashboard.py              # Streamlit read-only dashboard

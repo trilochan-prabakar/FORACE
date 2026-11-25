@@ -1,6 +1,6 @@
 import hashlib
 
-from integritywatch.scanner import scan_directory
+from forace.scanner import scan_directory
 
 
 def test_scanner_reads_files_from_temporary_directory(tmp_path):

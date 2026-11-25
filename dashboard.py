@@ -1,4 +1,4 @@
-"""Read-only Streamlit console for IntegrityWatch Lite."""
+"""Read-only Streamlit console for FORACE."""
 from datetime import datetime, timezone
 import html
 from pathlib import Path
@@ -8,14 +8,14 @@ import pandas as pd
 import altair as alt
 import streamlit as st
 
-from integritywatch.dashboard_data import (
+from forace.dashboard_data import (
     filter_findings, get_audit_status, get_audit_summary, get_baseline_status,
     get_database_status, get_monitor_status, load_audit_events,
     load_evaluation_results, load_file_inventory, load_findings, sort_findings,
 )
-from integritywatch.paths import (
+from forace.paths import (
     DEFAULT_BASELINE_PATH, DEFAULT_KEY_PATH, DEFAULT_SIGNATURE_PATH,
-    PROJECT_ROOT, project_path,
+    PROJECT_ROOT, default_database_path, project_path,
 )
 
 
@@ -172,8 +172,12 @@ def _project_path(value: str | Path) -> str:
 
 
 def _default_paths() -> dict[str, str]:
+    try:
+        database = str(default_database_path())
+    except ValueError:
+        database = ""
     return {
-        "db": _project_path("data/integritywatch.db"),
+        "db": database,
         "baseline": _project_path(DEFAULT_BASELINE_PATH),
         "key": _project_path(DEFAULT_KEY_PATH),
         "signature": _project_path(DEFAULT_SIGNATURE_PATH),
@@ -297,7 +301,7 @@ def _render_monitored_files_summary(paths):
 
 
 def _sidebar(paths, statuses):
-    st.sidebar.markdown('<div class="iw-brand">◈ &nbsp;IntegrityWatch <span>Lite</span></div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="iw-brand">◈ &nbsp;FORACE</div>', unsafe_allow_html=True)
     st.sidebar.caption("File Integrity Monitoring Console")
     st.sidebar.markdown("**WORKSPACE**")
 
@@ -327,7 +331,7 @@ def _sidebar(paths, statuses):
 
 
 def render_overview(bundle, findings, audit_events, loaded, paths):
-    _page_header("IntegrityWatch Lite", "File Integrity Monitoring & Security Change Intelligence.", "SECURITY OVERVIEW")
+    _page_header("FORACE", "File Integrity Monitoring & Security Change Intelligence.", "SECURITY OVERVIEW")
     st.caption(f"Dashboard refreshed {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')} · monitoring {bundle['monitor']['status'].replace('_', ' ')}")
     _render_health_summary(bundle, paths)
     st.markdown("#### Findings summary")
@@ -752,7 +756,7 @@ def render_demo():
         st.write("A hash can prove a file changed, but it does not explain whether a configuration change creates risk. Analysts need the affected file, the specific change, and its security meaning in one place.")
     with objectives:
         st.markdown("#### Project objectives")
-        st.write("IntegrityWatch combines SHA-256 inventory, authenticated baselines, semantic rules, and MITRE ATT&CK context to make changes easier to investigate without hiding uncertainty.")
+        st.write("FORACE combines SHA-256 inventory, authenticated baselines, semantic rules, and MITRE ATT&CK context to make changes easier to investigate without hiding uncertainty.")
 
     st.markdown("#### Security architecture")
     stages = (
@@ -781,9 +785,9 @@ python demo.py
 python demo.py --keep
 
 # Read-only baseline comparison and audit-chain verification
-python -m integritywatch verify --lab lab
-python -m integritywatch verify-log
-python -m integritywatch report
+python -m forace verify --lab lab
+python -m forace verify-log
+python -m forace report
 
 # Dashboard
 streamlit run dashboard.py""", language="bash")
@@ -794,12 +798,19 @@ streamlit run dashboard.py""", language="bash")
 
 
 def main():
-    st.set_page_config(page_title="IntegrityWatch Lite", page_icon="🛡️", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="FORACE", page_icon="🛡️", layout="wide", initial_sidebar_state="expanded")
     st.markdown(CSS, unsafe_allow_html=True)
     paths = _default_paths()
     if "iw_page" not in st.session_state:
         st.session_state["iw_page"] = "Overview"
-    db_path = _project_path(st.session_state.get("iw_db_path", paths["db"]))
+    db_selection = st.session_state.get("iw_db_path", paths["db"])
+    if not db_selection:
+        unavailable = {"status": "unavailable", "message": "Select a database explicitly."}
+        statuses = {name: unavailable for name in ("database", "baseline", "audit", "monitor")}
+        _sidebar(paths, statuses)
+        st.warning("Both data/integritywatch.db and data/forace.db exist. Select one in Data source paths to continue.")
+        return
+    db_path = _project_path(db_selection)
     baseline_path = _project_path(st.session_state.get("iw_baseline_path", paths["baseline"]))
     key_path = _project_path(st.session_state.get("iw_key_path", paths["key"]))
     signature_path = _project_path(st.session_state.get("iw_signature_path", paths["signature"]))

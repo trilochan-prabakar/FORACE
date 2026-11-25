@@ -4,10 +4,10 @@ import sqlite3
 
 import pytest
 
-from integritywatch.baseline import create_baseline, load_baseline, save_baseline
-from integritywatch.scanner import scan_directory
-from integritywatch.store import initialize_database
-import integritywatch.scanner as scanner
+from forace.baseline import create_baseline, load_baseline, save_baseline
+from forace.scanner import scan_directory
+from forace.store import initialize_database
+import forace.scanner as scanner
 
 
 def test_scanner_hash_metadata_and_text_snapshot(tmp_path):
