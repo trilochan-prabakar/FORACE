@@ -356,7 +356,8 @@ def render_overview(bundle, findings, audit_events, loaded, paths):
             st.caption("Severity analytics will appear when findings are recorded.")
     with right:
         st.markdown("#### Rule activity")
-        rules = pd.Series([row.get("rule_id") for row in findings if row.get("rule_id")]).value_counts().sort_index()        if rules.empty:
+        rules = pd.Series([row.get("rule_id") for row in findings if row.get("rule_id")]).value_counts().sort_index()
+        if rules.empty:
             st.caption("Rule activity will appear when security findings are recorded.")
         else:
             rules_frame = rules.rename_axis("Rule").reset_index(name="Findings")
