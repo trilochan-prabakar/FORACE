@@ -244,7 +244,7 @@ def test_file_integrity_uses_compact_table_and_copyable_full_hash(tmp_path):
     root = project_root / "lab"
     root.mkdir(exist_ok=True)
     test_file = root / "dashboard_test_sample.txt"
-    test_file.write_text("IntegrityWatch dashboard test\\n", encoding="utf-8")
+    test_file.write_text("FORACE dashboard test\\n", encoding="utf-8")
 
     try:
         scanned = scan_directory(root)["files"]
