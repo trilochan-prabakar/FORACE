@@ -177,8 +177,7 @@ def _default_paths() -> dict[str, str]:
     except ValueError:
         database = ""
     return {
-        "db": database,
-        "baseline": _project_path(DEFAULT_BASELINE_PATH),
+        "db": database,        "baseline": _project_path(DEFAULT_BASELINE_PATH),
         "key": _project_path(DEFAULT_KEY_PATH),
         "signature": _project_path(DEFAULT_SIGNATURE_PATH),
         "monitor": _project_path("data/monitor_status.json"),
@@ -357,8 +356,7 @@ def render_overview(bundle, findings, audit_events, loaded, paths):
             st.caption("Severity analytics will appear when findings are recorded.")
     with right:
         st.markdown("#### Rule activity")
-        rules = pd.Series([row.get("rule_id") for row in findings if row.get("rule_id")]).value_counts().sort_index()
-        if rules.empty:
+        rules = pd.Series([row.get("rule_id") for row in findings if row.get("rule_id")]).value_counts().sort_index()        if rules.empty:
             st.caption("Rule activity will appear when security findings are recorded.")
         else:
             rules_frame = rules.rename_axis("Rule").reset_index(name="Findings")
@@ -537,8 +535,7 @@ def render_audit(paths, bundle):
         c.metric("Latest record", summary["latest_timestamp"] or "—")
         if audit["status"] == "invalid":
             st.error(f"INVALID · first integrity failure at record {audit.get('record_id')}: {audit['message']}")
-        elif audit["status"] == "error":
-            st.error(f"UNAVAILABLE · {audit['message']}")
+        elif audit["status"] == "error":            st.error(f"UNAVAILABLE · {audit['message']}")
         elif audit["status"] == "valid":
             st.success(f"VALID · checked {audit.get('records_checked', 0)} records. Genesis record is present.")
 
@@ -717,7 +714,6 @@ def render_evaluation(evaluation):
         )
     else:
         st.info("No benign scenario results are available.")
-
     # Attack scenario outcomes
     with st.expander("Attack scenario outcomes"):
         attacks = [
@@ -804,12 +800,6 @@ def main():
     if "iw_page" not in st.session_state:
         st.session_state["iw_page"] = "Overview"
     db_selection = st.session_state.get("iw_db_path", paths["db"])
-    if not db_selection:
-        unavailable = {"status": "unavailable", "message": "Select a database explicitly."}
-        statuses = {name: unavailable for name in ("database", "baseline", "audit", "monitor")}
-        _sidebar(paths, statuses)
-        st.warning("Both data/integritywatch.db and data/forace.db exist. Select one in Data source paths to continue.")
-        return
     db_path = _project_path(db_selection)
     baseline_path = _project_path(st.session_state.get("iw_baseline_path", paths["baseline"]))
     key_path = _project_path(st.session_state.get("iw_key_path", paths["key"]))
@@ -837,7 +827,3 @@ def main():
         render_evaluation(load_evaluation_results(evaluation_path))
     else:
         render_demo()
-
-
-if __name__ == "__main__":
-    main()
