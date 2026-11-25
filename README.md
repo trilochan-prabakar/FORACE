@@ -166,10 +166,10 @@ The default paths are:
 - HMAC key: `data/baseline.key` (owner-only permissions, `0600`)
 - Detached signature: `data/baseline.json.hmac`
 - SQLite database: `data/forace.db` for a fresh install. Existing installations
-  continue using `data/integritywatch.db` when it is present.
+  continue using `data/FORACE.db` when it is present.
 
 FORACE selects the existing database when only one name is present. If both
-`data/integritywatch.db` and `data/forace.db` exist, database commands require
+`data/FORACE.db` and `data/forace.db` exist, database commands require
 an explicit `--db` path; no history is merged or selected silently. Existing
 database files are opened in place and are never renamed or migrated.
 
@@ -279,7 +279,7 @@ Run the complete 16-scenario evaluation without replacing the repository's
 existing Phase 4 outputs:
 
 ```bash
-venv/bin/python -B evaluate.py --output-dir /tmp/integritywatch-evaluation
+venv/bin/python -B evaluate.py --output-dir /tmp/FORACE-evaluation
 ```
 
 The output directory receives `results.csv` and `evaluation_report.md`.
@@ -304,8 +304,8 @@ When omitted, storage defaults are `data/baseline.json`, the owner-only
 `data/baseline.key`, its detached signature `data/baseline.json.hmac`, and the
 database selected by the compatibility rules above. Use `--db` to select a
 database explicitly.
-The renamed package is `forace`; the old `integritywatch` imports and
-`python -m integritywatch` entry point remain available as compatibility
+The renamed package is `forace`; the old `FORACE` imports and
+`python -m FORACE` entry point remain available as compatibility
 aliases.
 The optional `rebaseline --source-*` options identify the source baseline and
 signature for the separately reviewed recovery workflow; they do not change

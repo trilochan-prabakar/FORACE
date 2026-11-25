@@ -35,7 +35,7 @@ python -m forace report
 
 The standard baseline defaults are `data/baseline.json`, `data/baseline.key`,
 and `data/baseline.json.hmac`. Database selection preserves existing installs:
-use `data/integritywatch.db` when it is the only existing database, use
+use
 `data/forace.db` on a fresh install, and supply `--db` if both exist. No
 database is renamed or migrated. On a fresh project with no baseline or signature, create the sandbox and use
 `python -m forace init lab` to generate per-installation trust

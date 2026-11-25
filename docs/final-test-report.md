@@ -4,7 +4,7 @@
 **Scope:** Phase 1–5 code audit, Phase 6 security hardening and documentation.
 **Project data:** no project baseline, signature, key, lab file, database row, or
 `results.csv` was intentionally changed by Phase 6 verification. Evaluation
-output was written under `/tmp/integritywatch-phase6-final/`; test databases
+output was written under `/tmp/forace-phase6-final/`; test databases
 and demo workspaces used temporary directories.
 
 > Historical verification snapshot: the detailed checks and machine-state
@@ -19,7 +19,7 @@ and demo workspaces used temporary directories.
 | Check | Command or evidence | Result |
 |---|---|---|
 | Complete suite | `python -m pytest -q` | Historical result from 2026-11-01: 103 passed; not a current release-validation result |
-| Python compilation | `python -m compileall -q integritywatch attacks tests dashboard.py demo.py evaluate.py make_lab.py` | Passed; exit 0 (historical pre-refactor run) |
+| Python compilation | `python -m compileall -q forace attacks tests dashboard.py demo.py evaluate.py make_lab.py` | Passed; exit 0 (historical pre-refactor run) |
 | Scanner script | `python -m pytest -q tests/test_scanner.py` | 7 files scanned, 0 errors |
 | Scanner tests | Included in full suite; descriptor traversal, static symlinks, symlink swap, and `..` path escape covered | Passed |
 | Baseline script | `python -m pytest -q tests/test_baseline.py` | Temporary baseline save/load and overwrite protection passed |
@@ -27,8 +27,8 @@ and demo workspaces used temporary directories.
 | Database/audit tests | Phase 3 focused run and `tests/test_store.py` | Passed; schema, repeatable initialization, write-path symlink refusal, hash-chain integrity and fail-closed append covered |
 | Smart detection | `python -m pytest -q tests/test_phase2.py` | **21 passed** |
 | Phase 3 auth/audit/database | `python -m pytest -q tests/test_phase3_auth.py tests/test_phase3_audit.py tests/test_store.py` | **24 passed** |
-| Evaluation framework | `python evaluate.py --output-dir /tmp/integritywatch-phase6-final` | 16 scenarios executed; report and CSV generated |
-| Raw evaluation cross-check | Recounted `/tmp/integritywatch-phase6-final/results.csv` and compared with dashboard metric loader | 12/12 expected smart attack detections; 0/4 smart benign alerts; 11 hash-only attack detections; 3 hash-only benign alerts; counts agree |
+| Evaluation framework | `python evaluate.py --output-dir /tmp/forace-phase6-final` | 16 scenarios executed; report and CSV generated |
+| Raw evaluation cross-check | Recounted `/tmp/forace-phase6-final/results.csv` and compared with dashboard metric loader | 12/12 expected smart attack detections; 0/4 smart benign alerts; 11 hash-only attack detections; 3 hash-only benign alerts; counts agree |
 | Dashboard | Streamlit AppTest on Overview, Findings, Evaluation, and Integrity; includes missing database case | All pages rendered without application exceptions |
 | Live Streamlit startup | `streamlit run dashboard.py --server.headless=true --server.address=127.0.0.1 --server.port=8501` | Could not start: workspace denied `socket.socket()` with `PermissionError: Operation not permitted`. A direct Python socket test failed the same way, identifying an environment restriction before app binding. |
 | Demo | `python demo.py` | R01 detected; audit valid before isolated tamper, invalid after; temporary workspace cleaned |

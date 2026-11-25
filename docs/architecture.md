@@ -102,7 +102,7 @@ FORACE/
 ├── data/                     # Local baseline, key, signature, SQLite, heartbeat
 ├── docs/                     # Architecture, security, evaluation, demo and viva
 ├── forace/                   # Scanner, baseline, detection, monitor and storage
-├── integritywatch/           # Backward-compatible imports and module entry point
+├── forace/           # Primary application package and module entry point
 ├── lab/                      # Synthetic Linux-like test tree
 ├── tests/                    # Phase 1–6 regression and integration tests
 ├── dashboard.py              # Streamlit read-only dashboard

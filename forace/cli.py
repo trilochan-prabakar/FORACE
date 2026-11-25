@@ -25,7 +25,7 @@ def _add_storage_arguments(parser):
     parser.add_argument("--baseline", default=DEFAULT_BASELINE_PATH, help="Baseline JSON path")
     parser.add_argument("--key", default=DEFAULT_KEY_PATH, help="Owner-only HMAC key path")
     parser.add_argument("--signature", help="Detached baseline signature path (default: <baseline>.hmac)")
-    parser.add_argument("--db", help="SQLite database path (required when both legacy and FORACE databases exist)")
+    parser.add_argument("--db", help="SQLite database path (default: data/forace.db)")
 
 
 def _parser():
