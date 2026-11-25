@@ -28,13 +28,13 @@ def test_default_verify_uses_fresh_install_paths():
     assert args.signature is None
 
 
-def test_cli_uses_forace_database_even_when_old_database_file_exists(tmp_path, monkeypatch, capsys):
+def test_cli_uses_forace_database_without_ambiguity(tmp_path, monkeypatch, capsys):
     from forace import paths
 
     monkeypatch.setattr(paths, "PROJECT_ROOT", tmp_path)
     data = tmp_path / "data"
     data.mkdir()
-    (data / "integritywatch.db").touch()
+    (data / "alternate.sqlite").touch()
     initialize_database(data / "forace.db")
 
     assert main(["verify-log"]) == 0
