@@ -165,7 +165,7 @@ The default paths are:
 - Baseline: `data/baseline.json`
 - HMAC key: `data/baseline.key` (owner-only permissions, `0600`)
 - Detached signature: `data/baseline.json.hmac`
-- SQLite database: `data/forace.db`
+- SQLite database: `data/integritywatch.db`
 
 Verify the initialized baseline with:
 
@@ -208,8 +208,8 @@ also refuses any attempt to append a finding to an invalid chain.
 Verify the audit chain without changing the database, or print stored findings:
 
 ```bash
-venv/bin/python -B -m integritywatch verify-log --db data/forace.db
-venv/bin/python -B -m integritywatch report --db data/forace.db
+venv/bin/python -B -m integritywatch verify-log --db data/integritywatch.db
+venv/bin/python -B -m integritywatch report --db data/integritywatch.db
 ```
 
 `verify-log` returns `empty`, `valid`, `invalid`, or `error`. An empty chain is
@@ -296,7 +296,7 @@ See [evaluation methodology and results](docs/phase4-evaluation.md).
 
 When omitted, storage defaults are `data/baseline.json`, the owner-only
 `data/baseline.key`, its detached signature `data/baseline.json.hmac`, and
-`data/forace.db`.
+`data/integritywatch.db`.
 The optional `rebaseline --source-*` options identify the source baseline and
 signature for the separately reviewed recovery workflow; they do not change
 the standard storage defaults.
