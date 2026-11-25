@@ -828,3 +828,7 @@ def main():
         render_evaluation(load_evaluation_results(evaluation_path))
     else:
         render_demo()
+
+
+if __name__ == "__main__":
+    main()
