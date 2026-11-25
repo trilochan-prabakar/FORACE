@@ -116,11 +116,11 @@ opened by the user.
 ## Install on Linux or WSL2
 
 Use a Linux filesystem location for the project when running under WSL2 (for
-example, `~/Projects/FORACE-Lite`) to avoid Windows-mounted filesystem
+example, `~/Projects/FORACE`) to avoid Windows-mounted filesystem
 event and permission differences.
 
 ```bash
-cd ~/Projects/FORACE-Lite
+cd ~/Projects/FORACE
 sudo apt update
 sudo apt install -y python3 python3-venv python3-pip
 python3 -m venv venv
