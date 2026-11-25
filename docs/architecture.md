@@ -101,8 +101,7 @@ FORACE/
 ├── attacks/                  # Isolated synthetic scenarios
 ├── data/                     # Local baseline, key, signature, SQLite, heartbeat
 ├── docs/                     # Architecture, security, evaluation, demo and viva
-├── forace/                   # Scanner, baseline, detection, monitor and storage
-├── forace/           # Primary application package and module entry point
+├── forace/                   # Primary application package: scanner, detection, monitor and storage
 ├── lab/                      # Synthetic Linux-like test tree
 ├── tests/                    # Phase 1–6 regression and integration tests
 ├── dashboard.py              # Streamlit read-only dashboard

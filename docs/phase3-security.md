@@ -34,10 +34,7 @@ python -m forace report
 ```
 
 The standard baseline defaults are `data/baseline.json`, `data/baseline.key`,
-and `data/baseline.json.hmac`. Database selection preserves existing installs:
-use
-`data/forace.db` on a fresh install, and supply `--db` if both exist. No
-database is renamed or migrated. On a fresh project with no baseline or signature, create the sandbox and use
+and `data/baseline.json.hmac`. All installations use `data/forace.db` by default. An explicit `--db` path may be supplied when a separate database is required. On a fresh project with no baseline or signature, create the sandbox and use
 `python -m forace init lab` to generate per-installation trust
 material. Use `--baseline`, `--key`, `--signature`, and `--db` to select
 alternative storage paths. When `--signature` is omitted, it defaults to

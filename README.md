@@ -302,7 +302,7 @@ See [evaluation methodology and results](docs/phase4-evaluation.md).
 
 When omitted, storage defaults are `data/baseline.json`, the owner-only
 `data/baseline.key`, its detached signature `data/baseline.json.hmac`, and the
-database selected by the compatibility rules above. Use `--db` to select a
+default database at `data/forace.db`. Use `--db` to select a separate
 database explicitly.
 The renamed package is `forace`; the old `FORACE` imports and
 `python -m FORACE` entry point remain available as compatibility
