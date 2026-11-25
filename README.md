@@ -299,9 +299,6 @@ When omitted, storage defaults are `data/baseline.json`, the owner-only
 `data/baseline.key`, its detached signature `data/baseline.json.hmac`, and the
 default database at `data/forace.db`. Use `--db` to select a separate
 database explicitly.
-The renamed package is `forace`; the old `FORACE` imports and
-`python -m FORACE` entry point remain available as compatibility
-aliases.
 The optional `rebaseline --source-*` options identify the source baseline and
 signature for the separately reviewed recovery workflow; they do not change
 the standard storage defaults.
