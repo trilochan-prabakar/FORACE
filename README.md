@@ -1,11 +1,11 @@
-# IntegrityWatch Lite
+# FORACE
 
 <div align="center">
   <a href="https://trilochan-prabakar.github.io/trilochan-prabakar/"><img src="https://img.shields.io/badge/PORTFOLIO-Trilochan%20Prabakar-0E7490?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Portfolio website" /></a>
   <a href="https://github.com/trilochan-prabakar"><img src="https://img.shields.io/badge/GITHUB-Developer%20Profile-164E63?style=for-the-badge&logo=github&logoColor=white" alt="GitHub profile" /></a>
 </div>
 
-IntegrityWatch Lite is a local file-integrity monitor for a controlled Linux-like
+FORACE is a local file-integrity monitor for a controlled Linux-like
 lab. It records what changed and explains supported security-relevant changes
 with rules, severity, and MITRE ATT&CK references. It combines a signed baseline,
 SHA-256 file scans, semantic configuration checks, a SQLite finding store with
@@ -36,7 +36,7 @@ a hash-chained audit log, repeatable simulations, and a Streamlit dashboard.
 ## Problem and objectives
 
 Traditional file-integrity checks can say that a file changed without helping
-an operator understand whether the change matters. IntegrityWatch Lite compares
+an operator understand whether the change matters. FORACE compares
 files to an authenticated baseline and adds a small semantic layer for common
 Linux configuration files. The project demonstrates how to explain changes
 such as enabling SSH root login, adding a cron entry, changing account records,
@@ -116,11 +116,11 @@ opened by the user.
 ## Install on Linux or WSL2
 
 Use a Linux filesystem location for the project when running under WSL2 (for
-example, `~/Projects/IntegrityWatch-Lite`) to avoid Windows-mounted filesystem
+example, `~/Projects/FORACE-Lite`) to avoid Windows-mounted filesystem
 event and permission differences.
 
 ```bash
-cd ~/Projects/IntegrityWatch-Lite
+cd ~/Projects/FORACE-Lite
 sudo apt update
 sudo apt install -y python3 python3-venv python3-pip
 python3 -m venv venv
@@ -165,7 +165,7 @@ The default paths are:
 - Baseline: `data/baseline.json`
 - HMAC key: `data/baseline.key` (owner-only permissions, `0600`)
 - Detached signature: `data/baseline.json.hmac`
-- SQLite database: `data/integritywatch.db`
+- SQLite database: `data/forace.db`
 
 Verify the initialized baseline with:
 
@@ -208,8 +208,8 @@ also refuses any attempt to append a finding to an invalid chain.
 Verify the audit chain without changing the database, or print stored findings:
 
 ```bash
-venv/bin/python -B -m integritywatch verify-log --db data/integritywatch.db
-venv/bin/python -B -m integritywatch report --db data/integritywatch.db
+venv/bin/python -B -m integritywatch verify-log --db data/forace.db
+venv/bin/python -B -m integritywatch report --db data/forace.db
 ```
 
 `verify-log` returns `empty`, `valid`, `invalid`, or `error`. An empty chain is
@@ -296,7 +296,7 @@ See [evaluation methodology and results](docs/phase4-evaluation.md).
 
 When omitted, storage defaults are `data/baseline.json`, the owner-only
 `data/baseline.key`, its detached signature `data/baseline.json.hmac`, and
-`data/integritywatch.db`.
+`data/forace.db`.
 The optional `rebaseline --source-*` options identify the source baseline and
 signature for the separately reviewed recovery workflow; they do not change
 the standard storage defaults.
@@ -317,7 +317,7 @@ unchanged.
 
 ## Security model
 
-IntegrityWatch Lite assumes a trusted local operating system and one operator working within the synthetic `lab/` directory.
+FORACE assumes a trusted local operating system and one operator working within the synthetic `lab/` directory.
 
 HMAC-SHA256 authenticates the selected baseline using a locally stored, owner-only key. The SQLite audit log uses sequential SHA-256 hash chaining to make unauthorized changes detectable during verification.
 
