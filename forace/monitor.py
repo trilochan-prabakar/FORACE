@@ -131,7 +131,7 @@ class IntegrityMonitor(FileSystemEventHandler):
                 return []
         try:
             self.last_error = None
-            return self.process_scan()
+            return self.process_scan(trigger=f"watchdog:{event_type}")
         except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
             self._record_failure(f"watchdog:{event_type}", error)
             LOGGER.warning("Filesystem event scan failed: %s", error)
