@@ -123,17 +123,27 @@ def _record(db_path, *, trigger, mode, started, completed, status,
             )
             newly_stored.append(finding)
 
-        latest_states = {}
-        for row in connection.execute(
-            "SELECT event_type,record_data FROM audit_log "
-            "WHERE event_type IN ('finding','finding_cleared') ORDER BY id"
-        ):
-            payload = json.loads(row["record_data"])
-            fingerprint = payload.get("fingerprint")
-            if fingerprint:
-                latest_states[fingerprint] = row["event_type"]
-        for fingerprint, state in latest_states.items():
-            if state == "finding" and fingerprint not in active_fingerprints:
+        if status != "failed":
+            latest_states = {}
+            for row in connection.execute(
+                "SELECT event_type,record_data FROM audit_log "
+                "WHERE event_type IN ('finding','finding_cleared') ORDER BY id"
+            ):
+                payload = json.loads(row["record_data"])
+                fingerprint = payload.get("fingerprint")
+                if fingerprint:
+                    latest_states[fingerprint] = (row["event_type"], payload.get("finding", {}))
+            for fingerprint, (state, prior_payload) in latest_states.items():
+                if state != "finding" or fingerprint in active_fingerprints:
+                    continue
+                prior_path = prior_payload.get("file_path")
+                path_unobserved = any(
+                    failed_path == "." or prior_path == failed_path
+                    or prior_path.startswith(failed_path.rstrip("/") + "/")
+                    for failed_path in errors
+                )
+                if path_unobserved:
+                    continue
                 _append_audit_in_transaction(
                     connection, "finding_cleared", canonical_json({"fingerprint": fingerprint}), completed
                 )
