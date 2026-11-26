@@ -19,6 +19,7 @@ from forace.paths import (
 from forace.recovery import establish_recovery_baseline
 from forace.scanner import scan_directory
 from forace.store import append_audit_record, get_connection, initialize_database, verify_audit_chain
+from forace.observations import ensure_observation_schema, load_scan_history, verify_observation_history
 
 
 def _add_storage_arguments(parser):
@@ -64,6 +65,12 @@ def _parser():
 
     report = commands.add_parser("report", help="Print findings stored in SQLite as JSON")
     _add_storage_arguments(report)
+
+    history = commands.add_parser("history", help="Show recorded scan history and evidence verification")
+    history.add_argument("--limit", type=int, default=50, help="Number of recent scans (1-1000)")
+    _add_storage_arguments(history)
+    evidence = commands.add_parser("verify-evidence", help="Verify scan observation manifests")
+    _add_storage_arguments(evidence)
     return parser
 
 
@@ -98,6 +105,7 @@ def _initialize(args):
     save_baseline(baseline, baseline_path, approve_update=args.approve_update)
     sign_baseline(baseline_path, key_path, signature_path, approve_replace=args.approve_update)
     initialize_database(args.db)
+    ensure_observation_schema(args.db)
     chain = verify_audit_chain(args.db)
     if chain["status"] not in {"empty", "valid"}:
         raise RuntimeError(f"Refusing to append to invalid audit log: {chain['message']}")
@@ -166,7 +174,7 @@ def _watch(args):
 def main(argv=None):
     parser = _parser()
     args = parser.parse_args(argv)
-    database_commands = {"init", "verify", "watch", "verify-log", "report"}
+    database_commands = {"init", "verify", "watch", "verify-log", "report", "history", "verify-evidence"}
     if args.command in database_commands and getattr(args, "db", None) is None:
         try:
             args.db = str(default_database_path())
@@ -198,6 +206,15 @@ def main(argv=None):
                 connection.close()
             print(json.dumps(findings, indent=2))
             return 0
+        if args.command == "history":
+            result = load_scan_history(args.db, args.limit)
+            result["evidence_verification"] = verify_observation_history(args.db)
+            print(json.dumps(result, indent=2))
+            return 0 if result["status"] in {"available", "unavailable"} else 1
+        if args.command == "verify-evidence":
+            result = verify_observation_history(args.db)
+            print(json.dumps(result, indent=2))
+            return 0 if result["status"] in {"valid", "empty", "unavailable"} else 1
     except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
         print(f"FORACE: {error}", file=sys.stderr)
         return 1

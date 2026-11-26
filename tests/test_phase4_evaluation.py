@@ -22,7 +22,7 @@ def test_every_attack_simulation_triggers_its_expected_rule(scenario):
     assert row["false_negative"] is False
     assert row["explanation_covered"] is True
     assert row["attack_mapping_covered"] is True
-    assert row["hash_only_change_detected"] is (scenario.scenario_id != "R10")
+    assert row["hash_only_change_detected"] is (scenario.scenario_id not in {"R10", "V2A08"})
 
 
 @pytest.mark.parametrize("scenario", [scenario for scenario in SCENARIOS if scenario.category == "benign"], ids=lambda s: s.scenario_id)
@@ -88,12 +88,16 @@ def test_evaluation_writes_raw_csv_and_report_consistently(tmp_path):
     with first["csv_path"].open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream))
     assert len(rows) == len(SCENARIOS)
-    assert sum(row["category"] == "attack" for row in rows) == 12
-    assert sum(row["category"] == "benign" for row in rows) == 4
+    assert sum(row["category"] == "attack" for row in rows) == 20
+    assert sum(row["category"] == "benign" for row in rows) == 10
     summary = first["metrics"]
-    assert summary["total_attack_scenarios"] == 12
-    assert summary["total_benign_scenarios"] == 4
+    assert summary["total_attack_scenarios"] == 20
+    assert summary["total_benign_scenarios"] == 10
     assert set(summary["rule_wise_coverage"]) == {f"R{i:02}" for i in range(1, 13)}
+    assert summary["successfully_detected_attack_scenarios"] == 20
+    assert summary["false_positive_scenarios"] == 0
+    assert summary["hash_only_detected_attack_scenarios"] == 18
+    assert summary["hash_only_benign_alert_scenarios"] == 9
     report = first["report_path"].read_text(encoding="utf-8")
     assert "Detection rate" in report and "False-positive rate" in report
 
@@ -104,3 +108,18 @@ def test_isolated_simulation_copy_does_not_change_source_files(tmp_path):
     result = run_evaluation(SOURCE_LAB, tmp_path, scenarios=one_scenario)
     assert result["rows"][0]["smart_expected_rule_detected"] is True
     assert _tree_digest(SOURCE_LAB) == source_hash
+
+
+def test_checked_in_results_csv_matches_expanded_v2_corpus():
+    from forace.dashboard_data import load_evaluation_results
+
+    result = load_evaluation_results(PROJECT / "results.csv")
+    assert result["status"] == "available"
+    assert len(result["rows"]) == 30
+    assert [row["scenario_id"] for row in result["rows"]] == [scenario.scenario_id for scenario in SCENARIOS]
+    assert result["metrics"]["total_attack_scenarios"] == 20
+    assert result["metrics"]["total_benign_scenarios"] == 10
+    assert result["metrics"]["successfully_detected_attack_scenarios"] == 20
+    assert result["metrics"]["false_positive_scenarios"] == 0
+    assert result["metrics"]["hash_only_detected_attack_scenarios"] == 18
+    assert result["metrics"]["hash_only_benign_alert_scenarios"] == 9

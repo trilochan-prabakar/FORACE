@@ -40,6 +40,20 @@ SCENARIOS = (
     Scenario("B02", "benign", "Reformat SSH configuration whitespace", "attacks.benign_whitespace"),
     Scenario("B03", "benign", "Add a harmless crontab comment", "attacks.benign_cron_comment"),
     Scenario("B04", "benign", "Change a file timestamp without changing content", "attacks.benign_touch"),
+    Scenario("V2A01", "attack", "Enable SSH root login using equals syntax", "attacks.V2A01_sshd_equals_root_login", "R01"),
+    Scenario("V2A02", "attack", "Enable SSH password authentication using equals syntax", "attacks.V2A02_sshd_equals_password_auth", "R02"),
+    Scenario("V2A03", "attack", "Add an authorized key with source options", "attacks.V2A03_authorized_key_with_options", "R03"),
+    Scenario("V2A04", "attack", "Add inert suspicious-looking wget cron text", "attacks.V2A04_cron_wget_text", "R05"),
+    Scenario("V2A05", "attack", "Add a non-root account with UID zero", "attacks.V2A05_passwd_uid_zero", "R07"),
+    Scenario("V2A06", "attack", "Add a synthetic sudoers NOPASSWD entry", "attacks.V2A06_sudoers_nopasswd", "R09"),
+    Scenario("V2A07", "attack", "Modify a synthetic systemd ExecStart directive", "attacks.V2A07_systemd_execstart", "R12"),
+    Scenario("V2A08", "attack", "Enable SUID metadata on inert service text", "attacks.V2A08_suid_metadata", "R10"),
+    Scenario("V2B01", "benign", "Reformat SSH directives using equivalent equals syntax", "attacks.V2B01_sshd_equals_format"),
+    Scenario("V2B02", "benign", "Add an authorized_keys comment", "attacks.V2B02_authorized_keys_comment"),
+    Scenario("V2B03", "benign", "Add a systemd semicolon comment", "attacks.V2B03_systemd_comment"),
+    Scenario("V2B04", "benign", "Reformat cron whitespace without changing the job", "attacks.V2B04_cron_whitespace"),
+    Scenario("V2B05", "benign", "Add a sudoers comment", "attacks.V2B05_sudoers_comment"),
+    Scenario("V2B06", "benign", "Add a passwd inventory comment", "attacks.V2B06_passwd_comment"),
 )
 
 

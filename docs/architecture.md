@@ -9,7 +9,8 @@
 | Baseline | Validate/store the file map and root identity | `forace/baseline.py` |
 | Trust layer | Generate owner-only HMAC key, sign exact baseline bytes, authenticate before parsing | `forace/auth.py` |
 | Detection | Compare file sets/content/metadata and run supported semantic analyzers | `forace/detection.py`, `forace/analyzers.py`, `forace/rules.py`, `rules.yaml` |
-| Monitor | Watchdog notifications, event debounce, scans, periodic reconciliation, finding persistence | `forace/monitor.py`, `cli.py` |
+| Monitor | Watchdog notifications, event debounce, scans, periodic reconciliation, finding persistence, scan lifecycle capture | `forace/monitor.py`, `cli.py` |
+| Observation ledger (V2) | Persist per-scan file hashes/metadata, scoped scan errors, lifecycle status, and audit-linked manifests | `forace/observations.py` |
 | Storage | SQLite finding rows and sequential hash-chained audit entries | `forace/store.py` |
 | Evaluation | Fresh isolated scenario copies, smart/hash-only comparisons, metrics and CSV/report | `attacks/`, `evaluate.py` |
 | Demo | End-to-end R01 demonstration with isolated tamper simulation | `demo.py` |
@@ -81,6 +82,16 @@ inserts the finding, and appends its chained audit row. Invalid chains refuse
 new finding and audit appends. Finding de-duplication prevents repeated
 Watchdog notifications and reconciliation passes from adding the same finding
 for the same state.
+
+V2 also persists every monitoring scan in `scan_runs`. Each completed scan
+stores a row per observed regular file in `file_observations` and any scoped
+scanner errors in `observation_errors`. A deterministic manifest over those
+rows is included in a `scan_completed` audit event in the same SQLite write
+transaction. Failed scan attempts create a `scan_failed` event with no invented
+file observations. The `history` CLI and Scan History dashboard page expose
+these records; `verify-evidence` recomputes the manifests and checks their
+matching audit events. This is a point-in-time observation history, not a
+recording of every transient filesystem state.
 
 ### Evaluation and dashboard
 

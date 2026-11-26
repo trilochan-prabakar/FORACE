@@ -275,3 +275,45 @@ def test_attack_recurrence_is_recorded_after_returning_to_baseline(tmp_path):
     with sqlite3.connect(db) as connection:
         count = connection.execute("SELECT COUNT(*) FROM findings WHERE file_path='sample.txt'").fetchone()[0]
     assert count == 2
+
+
+def test_monitor_records_scan_lifecycle_and_watchdog_trigger(tmp_path):
+    monitor, root, db = make_monitor(tmp_path, debounce=0)
+    monitor.reconcile_once()
+    target = root / "sample.txt"
+    target.write_text("changed\n", encoding="utf-8")
+    monitor.handle_event("modified", target)
+    with sqlite3.connect(db) as connection:
+        rows = connection.execute(
+            "SELECT trigger, status, files_observed FROM scan_runs ORDER BY id"
+        ).fetchall()
+    assert rows[0][0] == "reconciliation"
+    assert rows[-1][0] == "watchdog:modified"
+    assert all(row[1] == "completed" and row[2] == 1 for row in rows)
+    from forace.observations import verify_observation_history
+    assert verify_observation_history(db)["status"] == "valid"
+
+
+def test_monitor_records_failed_observation_when_baseline_authentication_fails(tmp_path):
+    monitor, root, db = make_monitor(tmp_path, debounce=0)
+    with monitor.baseline_path.open("ab") as stream:
+        stream.write(b" ")
+    monitor.handle_event("modified", root / "sample.txt")
+    with sqlite3.connect(db) as connection:
+        row = connection.execute(
+            "SELECT status, error_message FROM scan_runs ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+    assert row[0] == "failed"
+    assert "signature" in row[1].lower()
+    from forace.observations import verify_observation_history
+    assert verify_observation_history(db)["status"] == "valid"
+
+
+def test_partial_observation_sets_monitor_error_state(tmp_path):
+    monitor, _, db = make_monitor(tmp_path, debounce=0)
+    result = {"files": {}, "errors": {"sample.txt": "Permission denied"}}
+    monitor.reconcile_once(scan_result=result)
+    assert "1 scanner error" in monitor.last_error
+    with sqlite3.connect(db) as connection:
+        status = connection.execute("SELECT status FROM scan_runs ORDER BY id DESC LIMIT 1").fetchone()[0]
+    assert status == "completed_with_errors"

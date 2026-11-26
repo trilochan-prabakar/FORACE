@@ -70,6 +70,7 @@ The project aims to:
   (`--interval`, 30 seconds by default).
 - HMAC-SHA256 baseline authentication using a 32-byte, owner-only key.
 - SQLite findings and sequential SHA-256 hash-chained audit records.
+- V2 scan lifecycle history with per-file SHA-256/metadata observations, explicit partial/failed scan states, and audit-linked manifest verification.
 - Read-only Streamlit views for system status, findings, ATT&CK links, audit
   events, and measured evaluation output.
 - Isolated attack and benign simulations, an evaluation CSV/report generator,
@@ -210,6 +211,8 @@ Verify the audit chain without changing the database, or print stored findings:
 
 ```bash
 venv/bin/python -B -m forace verify-log
+venv/bin/python -B -m forace history --limit 50
+venv/bin/python -B -m forace verify-evidence
 venv/bin/python -B -m forace report
 ```
 
@@ -231,15 +234,18 @@ venv/bin/python -B -m streamlit run dashboard.py --server.address 127.0.0.1 --se
 
 Open `http://localhost:8501` in the Linux or Windows browser. If WSL does not
 open a browser automatically, copy the URL into the browser. The dashboard is
-read-only and shows SQLite, baseline authentication, monitor status, and
-`results.csv`. File Integrity is fixed to the project's `lab/` directory.
+read-only and shows SQLite, baseline authentication, monitor status, scan
+history, observation manifest verification, and `results.csv`. File Integrity is fixed to the project's `lab/` directory.
 Missing or invalid inputs are shown as such; the dashboard does not invent
-sample alerts. Its six sections are Overview, Security Findings, File
-Integrity, Audit & Verification, Evaluation, and Demo / About. The command
+sample alerts. Its seven sections are Overview, Security Findings, File
+Integrity, Audit & Verification, Evaluation, Scan History, and Demo / About. The command
 binds the server to localhost. See
 [dashboard operation](docs/phase5-dashboard-demo.md).
 
 ## Testing
+
+Latest V2 GitHub Actions validation: **215 passed in 9.47s** (Python 3.12).
+See [the V2 validation report](docs/final-test-report.md) and [changelog](CHANGELOG.md).
 
 Run the full suite from the project root:
 
@@ -270,7 +276,7 @@ dashboard data-source fields. The demo database is intentionally tampered
 after its valid-chain check, so the dashboard should show it as invalid. The
 workspace contains temporary trust material; do not publish or share it.
 
-Run the complete 16-scenario evaluation without replacing the repository's
+Run the complete 30-scenario evaluation without replacing the repository's
 existing Phase 4 outputs:
 
 ```bash
@@ -279,10 +285,7 @@ venv/bin/python -B evaluate.py --output-dir /tmp/FORACE-evaluation
 
 The output directory receives `results.csv` and `evaluation_report.md`.
 Every scenario uses a separate copied lab and fresh baseline/key/signature.
-Metrics are recalculated from the generated rows. Current measured results for
-the documented corpus are 12/12 expected attack rules detected, 0/4 benign
-false-positive scenarios in smart mode, 11/12 hash-only attack detections, and
-3/4 hash-only benign alerts. These are corpus results, not real-world rates.
+Metrics are recalculated from the generated rows. The expanded V2 corpus contains 20 attack scenarios and 10 benign scenarios. The test suite measures 20/20 expected-rule detections and 0/10 smart false-positive scenarios; hash-only detects 18/20 attacks and alerts on 9/10 benign content edits. These are synthetic corpus results, not real-world rates.
 See [evaluation methodology and results](docs/phase4-evaluation.md).
 
 ## CLI reference
@@ -294,6 +297,8 @@ See [evaluation methodology and results](docs/phase4-evaluation.md).
 | `venv/bin/python -B -m forace watch` | Watch events and reconcile periodically | `--lab`, `--mode`, `--debounce`, `--interval`, storage options |
 | `venv/bin/python -B -m forace verify-log` | Read-only audit-chain check | `--db` |
 | `venv/bin/python -B -m forace report` | Print stored finding rows as JSON | `--db` |
+| `venv/bin/python -B -m forace history` | List recent scan observations and verification status | `--limit`, `--db` |
+| `venv/bin/python -B -m forace verify-evidence` | Verify scan manifests against the audit chain | `--db` |
 
 When omitted, storage defaults are `data/baseline.json`, the owner-only
 `data/baseline.key`, its detached signature `data/baseline.json.hmac`, and the
@@ -308,6 +313,7 @@ unchanged.
 
 ## Documentation
 
+- [V2 scan observation history](docs/v2-observation-history.md)
 - [Architecture and data flow](docs/architecture.md)
 - [Detailed data flow](docs/data-flow.md)
 - [Threat model, security design, HMAC and hash chain](docs/security-design.md)
@@ -338,4 +344,4 @@ The dashboard provides read-only views of stored data and has no authentication.
 - Linux and WSL are the supported environments. Native Windows execution is not supported.
 - The Streamlit dashboard has no authentication. Keep it bound to localhost and do not expose it to an untrusted network.
 - Hash-only mode does not detect metadata-only changes such as SUID changes.
-- The evaluation set remains the original 12 synthetic attack scenarios (one authored for each R01–R12) and four benign scenarios. New evasion-focused regressions are tested separately and are not included in `results.csv`; the evaluation does not estimate performance against real adversaries or production filesystems.
+- The evaluation set contains 20 synthetic attack scenarios covering R01–R12 and 10 benign scenarios. Additional monitoring edge cases and unsupported parser semantics remain outside the evaluation corpus; the evaluation does not estimate performance against real adversaries or production filesystems.

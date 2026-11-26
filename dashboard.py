@@ -17,6 +17,7 @@ from forace.paths import (
     DEFAULT_BASELINE_PATH, DEFAULT_KEY_PATH, DEFAULT_SIGNATURE_PATH,
     PROJECT_ROOT, default_database_path, project_path,
 )
+from forace.observations import load_scan_history, verify_observation_history
 
 
 PAGES = [
@@ -25,6 +26,7 @@ PAGES = [
     ("File Integrity", "nav_file_integrity", "▤"),
     ("Audit & Verification", "nav_audit_and_verification", "✓"),
     ("Evaluation", "nav_evaluation", "▥"),
+    ("Scan History", "nav_scan_history", "◷"),
     ("Demo / About", "nav_demo_about", "ⓘ"),
 ]
 
@@ -745,6 +747,45 @@ def render_evaluation(evaluation):
 
 
 
+def render_scan_history(db_path):
+    _page_header("Scan History", "Review what FORACE observed during each monitoring pass and verify its evidence manifests.", "OBSERVATION HISTORY")
+    history = load_scan_history(db_path, 100)
+    verification = verify_observation_history(db_path)
+    left, right = st.columns(2)
+    with left:
+        _status_card("Observation history", history["status"], history["message"], "◷")
+    with right:
+        _status_card("Manifest verification", verification["status"], verification["message"], "✓")
+    if verification["status"] == "invalid":
+        st.error("Observation integrity verification failed. Do not rely on this scan history until the database is reviewed.")
+    elif verification["status"] == "unavailable":
+        st.info("This database predates FORACE V2. Start V2 monitoring to initialize the additive observation schema.")
+    if history["status"] != "available":
+        return
+    scans = history["scans"]
+    st.markdown("#### Recorded scans")
+    st.caption(f"{history.get('count', 0)} scan records · newest 100 shown · scan timestamps are local system observations recorded in UTC")
+    if not scans:
+        st.info("No scan observations have been recorded. Start monitoring to create the first observation.")
+        return
+    frame = pd.DataFrame([{
+        "Scan": row["id"], "Completed (UTC)": row["completed_at_utc"],
+        "Trigger": row["trigger"], "Mode": row["mode"], "Status": row["status"],
+        "Files": row["files_observed"], "Errors": row["errors_count"],
+        "Findings": row["findings_count"],
+    } for row in scans])
+    st.dataframe(frame, width="stretch", hide_index=True)
+    st.markdown("#### Observation details")
+    for index, row in enumerate(scans):
+        with st.expander(f"Scan {row['id']} · {row['status']} · {row['trigger']}", expanded=(index == 0)):
+            st.write(f"**Started:** {row['started_at_utc']}")
+            st.write(f"**Completed:** {row['completed_at_utc']}")
+            st.write(f"**Observed files:** {row['files_observed']} · **Scanner errors:** {row['errors_count']} · **Findings:** {row['findings_count']}")
+            st.code(row["manifest_sha256"], language=None)
+            if row.get("error_message"):
+                st.warning(row["error_message"])
+    st.caption("A scan records a point-in-time observation. It cannot prove that no transient change occurred between scans.")
+
 def render_demo():
     _page_header("Project Overview", "A local, explainable file integrity monitor for controlled security labs.", "DEMO / ABOUT")
     problem, objectives = st.columns(2)
@@ -826,6 +867,8 @@ def main():
         render_audit(paths, bundle)
     elif page == "Evaluation":
         render_evaluation(load_evaluation_results(evaluation_path))
+    elif page == "Scan History":
+        render_scan_history(db_path)
     else:
         render_demo()
 

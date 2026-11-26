@@ -1,5 +1,36 @@
 # Phase 6 final audit and verification report
 
+## FORACE V2 CI verification — 2026-11-27
+
+The V2 development branch was validated by the GitHub Actions Python 3.12
+workflow on commit `a7929b7627c673f167b47a6f5b982d8b55a4298d`:
+[workflow run 45884512973](https://github.com/trilochan-prabakar/FORACE/actions/runs/45884512973).
+
+| Check | Result |
+|---|---|
+| Python compilation | Passed |
+| Full pytest suite | **215 passed in 9.47s** |
+| Scan observation migration and manifest tamper tests | Passed |
+| Watchdog lifecycle, failed/partial scan status tests | Passed |
+| Expanded evaluation corpus | 20/20 expected-rule attack detections |
+| Smart benign evaluation | 10/10 handled without alerts |
+| Hash-only evaluation | 18/20 attack changes detected; 9/10 benign content edits alerted |
+| Checked-in `results.csv` | 30 rows; dashboard loader and metric assertions passed |
+| Dashboard navigation | Seven sections covered by Streamlit AppTest |
+
+These are automated results for the controlled synthetic corpus and test
+environment. They do not establish production-host coverage, live network
+service startup in every environment, or protection against an attacker who
+can rewrite the complete local database. The V2 observation ledger is
+point-in-time evidence; V3 is intended to build investigation workflows on
+this foundation.
+
+The older Phase 6 results below remain historical and are retained without
+rewriting their original dates or claims.
+
+---
+
+
 **Historical run date:** 2026-11-01
 **Scope:** Phase 1–5 code audit, Phase 6 security hardening and documentation.
 **Project data:** no project baseline, signature, key, lab file, database row, or
