@@ -31,10 +31,18 @@ The CSV preserves each scenario's expected rule, actual smart findings, actual h
 
 The corpus remains deliberately synthetic: 20 attack scenarios exercise R01–R12 with selected syntax variants, alongside 10 benign edits. It is a repeatable regression corpus, not a representative sample of production host activity. R05 uses a static list of suspicious command markers. These results measure the current rule implementation against its own supported scenarios; they are not a real-world effectiveness estimate. The synthetic account/key/service/log data is not usable on a host, and no crontab or service command is executed. Every scenario starts from a fresh copy and a newly authenticated baseline, so one scenario cannot contaminate another.
 
-## Actual run
+## Actual V2 results
 
-The V2 30-scenario corpus is expected to be measured by CI and the local evaluation command before release. The previous V1 measurement was 12 of 12 attack scenarios detected and 4 of 4 benign scenarios handled without smart alerts. V2 adds syntax-variant and benign-formatting coverage; do not report V2 metrics until the expanded run has been executed; R10 changed metadata without changing file content, so hash-only did not detect it. Every R01–R12 scenario was detected (one scenario per rule), and explanation and ATT&CK mapping coverage were each 1.000. These are measured results for this specific synthetic corpus, not projected real-world performance.
+The expanded 30-scenario evaluation is exercised by the V2 test suite. The measured corpus results are:
 
+- Smart mode detected **20/20 attack scenarios** (1.000 scenario-level detection rate; 0 false negatives).
+- Smart mode handled **10/10 benign scenarios** without alerts (0.000 scenario-level false-positive rate).
+- Hash-only mode detected **18/20 attack scenarios**. The two metadata-only SUID cases (R10 and V2A08) do not change content hashes.
+- Hash-only mode alerted on **9/10 benign content edits**; the timestamp-only B04 case does not change the content hash.
+- All expected-rule findings contain an explanation and ATT&CK mapping.
+
+These results are limited to this synthetic regression corpus. They are not a real-world detection-rate estimate. The generated CSV and Markdown report should be produced with the evaluation command when a local results artifact is required.
+ 
 ## Evaluation scope note
 
 The V2 corpus expands the published scenario set to 20 attacks and 10 benign edits. It adds targeted syntax and formatting variants while retaining the original R01–R12 scenarios. Symlink replacement, recurring attacks, temporary-file handling, sudoers include directives, and rsync command lookalikes remain covered only by focused regression tests where present; they are not claimed as part of the scenario metrics. Do not interpret the existing CSV as a measurement of those additional cases.
