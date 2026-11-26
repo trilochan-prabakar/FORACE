@@ -33,6 +33,7 @@ a hash-chained audit log, repeatable simulations, and a Streamlit dashboard.
 - [Documentation](#documentation)
 - [Testing](#testing)
 - [Limitations](#limitations)
+- [License](#license)
 
 ## Problem and objectives
 
@@ -347,3 +348,7 @@ The dashboard provides read-only views of stored data and has no authentication.
 - The Streamlit dashboard has no authentication. Keep it bound to localhost and do not expose it to an untrusted network.
 - Hash-only mode does not detect metadata-only changes such as SUID changes.
 - The evaluation set contains 20 synthetic attack scenarios covering R01–R12 and 10 benign scenarios. Additional monitoring edge cases and unsupported parser semantics remain outside the evaluation corpus; the evaluation does not estimate performance against real adversaries or production filesystems.
+
+## License
+
+FORACE is released under the [MIT License](LICENSE).

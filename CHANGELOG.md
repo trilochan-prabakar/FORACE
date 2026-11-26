@@ -5,6 +5,7 @@ All notable FORACE changes are documented here.
 ## 2.0.0 — 2026-11-27
 
 ### Added
+- MIT License and README license section.
 - Persistent scan lifecycle history with completed, completed-with-errors, and failed states.
 - Per-file SHA-256 and selected metadata observations for each completed scan.
 - Path-scoped scanner error records, preserving partial observation status.
