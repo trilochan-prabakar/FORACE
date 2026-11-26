@@ -8,6 +8,8 @@
   follow symbolic links during scanning.
 - Preserve evidence of finding changes and refuse new appends when the existing
   audit chain is already invalid.
+- Persist V2 scan lifecycle records and per-file observation manifests, including
+  explicit partial and failed states; never turn a failed scan into a clean scan.
 - Keep dashboard reads read-only and display missing, invalid, or unverified
   state without a success indicator.
 - Keep demonstrations and evaluations isolated from project trust data and
@@ -79,7 +81,8 @@ Subsequent rows include the preceding record's hash.
 
 Every writer starts `BEGIN IMMEDIATE`; the chain is checked within that
 transaction before new records are appended. Findings and their audit entries
-are committed together. Verification checks SQLite `quick_check`, IDs starting
+are committed together. V2 scan records, per-file observations, scanner errors,
+and their manifest audit event are also committed in one transaction. Verification checks SQLite `quick_check`, IDs starting
 at one, timestamp format/timezone, canonical event data, previous-hash links,
 record hashes, and the AUTOINCREMENT high-water mark to detect trailing row
 deletion. Verification opens the database read-only and does not repair it.
