@@ -129,5 +129,7 @@ def test_checked_in_results_csv_matches_expanded_v2_corpus():
 def test_checked_in_evaluation_csv_matches_fresh_full_evaluation(tmp_path):
     generated = run_evaluation(SOURCE_LAB, tmp_path / "fresh")
     checked_in = PROJECT / "results.csv"
-    assert generated["csv_path"].read_bytes() == checked_in.read_bytes()
+    generated_csv = generated["csv_path"].read_text(encoding="utf-8").replace("\r\n", "\n")
+    checked_in_csv = checked_in.read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert generated_csv == checked_in_csv
     assert generated["report_path"].exists()
