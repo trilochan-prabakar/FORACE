@@ -104,7 +104,7 @@ for module responsibilities and details.
 
 ## Technology
 
-- Python 3.11 or later; CI tests Python 3.11 and 3.12. Direct dependencies are pinned in `requirements.txt` to the versions used by the latest validated CI environment.
+- Python 3.11 or later; CI tests Python 3.11 and 3.12. Direct dependencies are pinned in `requirements.txt`; `requirements-lock.txt` records the complete resolved Linux CI environment for repeatable installs.
 - Watchdog for filesystem event notifications.
 - PyYAML for the local rule file.
 - SQLite for findings and audit records.
@@ -128,7 +128,7 @@ sudo apt update
 sudo apt install -y python3 python3-venv python3-pip
 python3 -m venv venv
 venv/bin/python -m pip install --upgrade pip
-venv/bin/python -m pip install -r requirements.txt
+venv/bin/python -m pip install -r requirements-lock.txt
 ```
 
 Run commands from the project root. Use `venv/bin/python` so the application,
