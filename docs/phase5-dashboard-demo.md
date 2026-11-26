@@ -18,7 +18,7 @@ a separate event stream.
 
 ## Install and start
 
-From the project root, install the dependencies in `requirements.txt` and run:
+From the project root, install the locked dependencies in `requirements-lock.txt` and run:
 
 ```bash
 venv/bin/python -m pip install -r requirements.txt
