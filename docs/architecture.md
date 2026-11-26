@@ -14,7 +14,7 @@
 | Storage | SQLite finding rows and sequential hash-chained audit entries | `forace/store.py` |
 | Evaluation | Fresh isolated scenario copies, smart/hash-only comparisons, metrics and CSV/report | `attacks/`, `evaluate.py` |
 | Demo | End-to-end R01 demonstration with isolated tamper simulation | `demo.py` |
-| Dashboard | Read-only status, finding, audit-event, and evaluation views | `dashboard.py`, `forace/dashboard_data.py` |
+| Dashboard | Read-only status, finding, audit-event, per-scan file-observation, scanner-error, and evaluation views | `dashboard.py`, `forace/dashboard_data.py`, `forace/observations.py` |
 
 ## Data flow
 
