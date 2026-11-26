@@ -62,7 +62,11 @@ def load_findings(db_path, limit=None):
         columns = {row[1] for row in connection.execute("PRAGMA table_info(findings)")}
         if not REQUIRED_FINDING_COLUMNS <= columns:
             return {"status": "error", "message": "Findings table has an unsupported schema", "findings": [], "count": 0}
-        query = "SELECT id, timestamp_utc, file_path, change_type, rule_id, severity, attack_id, explanation FROM findings ORDER BY timestamp_utc DESC, id DESC"
+        scan_id_column = "scan_id" if "scan_id" in columns else "NULL AS scan_id"
+        query = (
+            "SELECT id, timestamp_utc, file_path, change_type, rule_id, severity, attack_id, explanation, "
+            + scan_id_column + " FROM findings ORDER BY timestamp_utc DESC, id DESC"
+        )
         cursor = connection.execute(query if limit is None else query + " LIMIT ?", () if limit is None else (limit,))
         rows = [dict(row) for row in cursor]
         return {"status": "available", "message": status["message"],
