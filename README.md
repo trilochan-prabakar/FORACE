@@ -244,6 +244,9 @@ binds the server to localhost. See
 
 ## Testing
 
+Latest V2 GitHub Actions validation: **215 passed in 9.47s** (Python 3.12).
+See [the V2 validation report](docs/final-test-report.md) and [changelog](CHANGELOG.md).
+
 Run the full suite from the project root:
 
 ```bash
