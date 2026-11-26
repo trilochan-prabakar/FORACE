@@ -13,7 +13,9 @@ All notable FORACE changes are documented here.
 - Scan history through `python -m forace history --limit 50` and a new Scan History dashboard page.
 - Bounded watchdog event de-duplication cache and visible partial-scan error status.
 - Expanded isolated evaluation corpus: 20 synthetic attack scenarios across R01–R12 and 10 benign edits.
-- V2 migration, orphan-observation integrity, atomic scan/finding persistence, monitoring, evaluation-artifact, and dashboard regression tests.\n- Per-file observation and scanner-error details in the Scan History dashboard.\n- Pinned direct dependencies, a resolved Linux dependency lock, and Python 3.11/3.12 CI coverage.
+- V2 migration, orphan-observation integrity, atomic scan/finding persistence, monitoring, evaluation-artifact, and dashboard regression tests.
+- Per-file observation and scanner-error details in the Scan History dashboard.
+- Pinned direct dependencies, a resolved Linux dependency lock, and Python 3.11/3.12 CI coverage.
 
 ### Compatibility
 - Existing V1 findings, baseline HMAC authentication, R01–R12 rules, audit chain, and CLI operations are retained.
