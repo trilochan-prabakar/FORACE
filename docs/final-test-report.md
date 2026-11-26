@@ -1,29 +1,33 @@
 # Phase 6 final audit and verification report
 
-## FORACE V2 CI verification — 2026-11-27
+## FORACE V2 hardening CI verification — 2026-11-27
 
-The V2 development branch was validated by the GitHub Actions Python 3.12
-workflow on commit `a7929b7627c673f167b47a6f5b982d8b55a4298d`:
-[workflow run 45884512973](https://github.com/trilochan-prabakar/FORACE/actions/runs/45884512973).
+The hardened V2 branch was validated on commit
+`3a3d3581968a1faf09860db0d173ee78c06e82b3` by the two-job GitHub Actions
+matrix: [workflow run 45888277509](https://github.com/trilochan-prabakar/FORACE/actions/runs/45888277509).
 
-| Check | Result |
-|---|---|
-| Python compilation | Passed |
-| Full pytest suite | **215 passed in 9.47s** |
-| Scan observation migration and manifest tamper tests | Passed |
-| Watchdog lifecycle, failed/partial scan status tests | Passed |
-| Expanded evaluation corpus | 20/20 expected-rule attack detections |
-| Smart benign evaluation | 10/10 handled without alerts |
-| Hash-only evaluation | 18/20 attack changes detected; 9/10 benign content edits alerted |
-| Checked-in `results.csv` | 30 rows; dashboard loader and metric assertions passed |
-| Dashboard navigation | Seven sections covered by Streamlit AppTest |
+| Check | Python 3.11 | Python 3.12 |
+|---|---:|---:|
+| Dependency lock installation | Passed | Passed |
+| `pip check` | Passed | Passed |
+| Python compilation | Passed | Passed |
+| Full pytest suite | **225 passed in 7.39s** | **225 passed in 8.76s** |
 
-These are automated results for the controlled synthetic corpus and test
-environment. They do not establish production-host coverage, live network
-service startup in every environment, or protection against an attacker who
-can rewrite the complete local database. The V2 observation ledger is
-point-in-time evidence; V3 is intended to build investigation workflows on
-this foundation.
+The regression suite includes orphaned observation rejection, V1-to-V3
+migration compatibility, atomic scan/finding persistence, partial-scan
+finding preservation, finding-to-scan provenance, detailed scan-history
+loading, CLI verification exit codes, deterministic evaluation artifact
+comparison, and dashboard scan provenance display.
+
+Evaluation remains limited to the documented synthetic corpus: 20/20 expected
+attack scenarios detected in smart mode, 0/10 benign smart alerts, 18/20
+hash-only attack detections, and 9/10 benign hash-only alerts. These are not
+production detection-rate estimates.
+
+These checks validate the repository on the two Python versions above. They do
+not establish production-host coverage, live network service startup in every
+environment, or protection against an attacker who can rewrite the complete
+local database. Scan observations remain point-in-time evidence.
 
 The older Phase 6 results below remain historical and are retained without
 rewriting their original dates or claims.
