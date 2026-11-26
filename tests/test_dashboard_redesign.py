@@ -183,6 +183,7 @@ def test_all_six_pages_render_and_navigation_switches_page():
         ("File Integrity", "nav_file_integrity", "File Integrity"),
         ("Audit & Verification", "nav_audit_and_verification", "Audit & Verification"),
         ("Evaluation", "nav_evaluation", "Detection Performance & Evaluation"),
+        ("Scan History", "nav_scan_history", "Scan History"),
         ("Demo / About", "nav_demo_about", "Project Overview"),
         ("Overview", "nav_overview", "FORACE"),
     ]
