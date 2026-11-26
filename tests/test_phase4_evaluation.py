@@ -123,3 +123,11 @@ def test_checked_in_results_csv_matches_expanded_v2_corpus():
     assert result["metrics"]["false_positive_scenarios"] == 0
     assert result["metrics"]["hash_only_detected_attack_scenarios"] == 18
     assert result["metrics"]["hash_only_benign_alert_scenarios"] == 9
+
+
+
+def test_checked_in_evaluation_csv_matches_fresh_full_evaluation(tmp_path):
+    generated = run_evaluation(SOURCE_LAB, tmp_path / "fresh")
+    checked_in = PROJECT / "results.csv"
+    assert generated["csv_path"].read_bytes() == checked_in.read_bytes()
+    assert generated["report_path"].exists()
