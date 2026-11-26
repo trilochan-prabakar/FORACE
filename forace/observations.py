@@ -87,7 +87,7 @@ def _record(db_path, *, trigger, mode, started, completed, status,
                 "findings_count":findings_count,"manifest_sha256":digest}
         if error_message:
             data["error_message"] = error_message
-        _append_audit_in_transaction(connection,event,data,completed)
+        _append_audit_in_transaction(connection,event,canonical_json(data),completed)
         connection.commit()
         return {"scan_id":scan_id,"status":status,"manifest_sha256":digest,
                 "files_observed":len(files),"errors_count":len(errors)}
