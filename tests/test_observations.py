@@ -113,3 +113,57 @@ def test_scan_history_includes_file_observations_and_scanner_errors(tmp_path):
     assert row["files"][0]["file_path"] == "etc/test.conf"
     assert row["files"][0]["sha256"] == "a" * 64
     assert row["errors"] == [{"path": "etc/blocked", "error": "Permission denied"}]
+
+
+
+def test_findings_are_linked_to_scan_and_committed_with_manifest(tmp_path):
+    db = tmp_path / "linked.db"
+    initialize_database(db)
+    ensure_observation_schema(db)
+    finding = {
+        "file_path": "etc/test.conf", "change_type": "modified", "rule_id": "R01",
+        "severity": "High", "attack_id": "T1021.004", "explanation": "SSH root login enabled",
+    }
+    recorded = record_scan(
+        db, sample(), trigger="watchdog:modified", mode="smart", findings_count=1,
+        finding_records=[{"finding": finding, "fingerprint": "c" * 64}],
+    )
+    assert recorded["scan_id"] == 1
+    assert recorded["new_findings"] == [finding]
+    with sqlite3.connect(db) as con:
+        row = con.execute("SELECT scan_id FROM findings").fetchone()
+        audit_payload = con.execute(
+            "SELECT record_data FROM audit_log WHERE event_type='finding'"
+        ).fetchone()[0]
+    assert row[0] == recorded["scan_id"]
+    assert '"scan_id":1' in audit_payload
+    assert verify_observation_history(db)["status"] == "valid"
+
+
+def test_failed_finding_write_rolls_back_scan_and_observations(tmp_path):
+    db = tmp_path / "atomic.db"
+    initialize_database(db)
+    ensure_observation_schema(db)
+    finding = {"file_path": "etc/test.conf", "change_type": "modified"}
+    try:
+        record_scan(
+            db, sample(), trigger="manual", mode="smart", findings_count=1,
+            finding_records=[{"finding": finding, "fingerprint": "not-a-sha256"}],
+        )
+    except ValueError as error:
+        assert "SHA-256" in str(error)
+    else:
+        raise AssertionError("invalid finding fingerprint was accepted")
+    with sqlite3.connect(db) as con:
+        assert con.execute("SELECT COUNT(*) FROM scan_runs").fetchone()[0] == 0
+        assert con.execute("SELECT COUNT(*) FROM file_observations").fetchone()[0] == 0
+        assert con.execute("SELECT COUNT(*) FROM findings").fetchone()[0] == 0
+
+
+def test_verify_evidence_returns_nonzero_for_v1_database(tmp_path, capsys):
+    from forace.cli import main
+
+    db = tmp_path / "v1.db"
+    initialize_database(db)
+    assert main(["verify-evidence", "--db", str(db)]) == 1
+    assert '"status": "unavailable"' in capsys.readouterr().out
