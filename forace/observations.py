@@ -203,10 +203,6 @@ def verify_observation_history(db_path):
         tables = {r[0] for r in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         if not {"scan_runs","file_observations","observation_errors","audit_log"} <= tables:
             return {"status":"unavailable","valid":False,"scans_checked":0,"message":"V2 observation schema is not installed"}
-        foreign_key_errors = connection.execute("PRAGMA foreign_key_check").fetchall()
-        if foreign_key_errors:
-            return {"status":"invalid","valid":False,"scans_checked":0,
-                    "message":"Observation database contains foreign-key violations"}
         orphan_checks = [
             ("file_observations", "SELECT COUNT(*) FROM file_observations o LEFT JOIN scan_runs s ON s.id=o.scan_id WHERE s.id IS NULL"),
             ("observation_errors", "SELECT COUNT(*) FROM observation_errors o LEFT JOIN scan_runs s ON s.id=o.scan_id WHERE s.id IS NULL"),
@@ -215,6 +211,10 @@ def verify_observation_history(db_path):
             if connection.execute(query).fetchone()[0]:
                 return {"status":"invalid","valid":False,"scans_checked":0,
                         "message":"Orphaned rows detected in " + table}
+        foreign_key_errors = connection.execute("PRAGMA foreign_key_check").fetchall()
+        if foreign_key_errors:
+            return {"status":"invalid","valid":False,"scans_checked":0,
+                    "message":"Observation database contains foreign-key violations"}
         audit = _verify_audit_connection(connection)
         if audit["status"] not in {"empty","valid"}:
             return {"status":"invalid","valid":False,"scans_checked":0,"message":f"Audit chain is {audit['status']}: {audit['message']}"}
