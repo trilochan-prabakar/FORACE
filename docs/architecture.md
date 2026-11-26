@@ -31,10 +31,15 @@ flowchart TD
   Timer[Reconciliation interval] --> Scanner
   Debounce --> Scanner
   Semantic --> Finding[Finding object]
-  Finding --> Tx[SQLite immediate transaction]
-  Tx --> Findings[findings table]
+  Finding --> Tx[Single SQLite immediate transaction]
+  Scanner --> Tx
+  Tx --> Runs[scan_runs]
+  Tx --> Observations[file_observations + observation_errors]
+  Tx --> Findings[findings linked by scan_id]
   Tx --> Audit[audit_log hash chain]
-  Findings --> Dashboard[Read-only Streamlit dashboard]
+  Runs --> Dashboard[Read-only Streamlit dashboard]
+  Observations --> Dashboard
+  Findings --> Dashboard
   Audit --> Dashboard
   CSV[results.csv] --> Eval[Metrics recalculated by evaluate.py]
   Eval --> Dashboard
@@ -75,23 +80,25 @@ analysis and metadata alerts.
 
 ### Finding storage and audit
 
-For each finding, the monitor computes a fingerprint from the finding,
-current-file digest, and baseline digest. In one `BEGIN IMMEDIATE` transaction
-it verifies the existing audit chain, checks for a duplicate fingerprint,
-inserts the finding, and appends its chained audit row. Invalid chains refuse
-new finding and audit appends. Finding de-duplication prevents repeated
+For each scan, the monitor computes finding fingerprints from the finding,
+current-file digest, and baseline digest. One `BEGIN IMMEDIATE` transaction
+verifies the existing audit chain, inserts the scan lifecycle row, file
+observations and scanner errors, inserts any newly active findings with their
+`scan_id`, appends finding/clearing audit events, and appends the scan manifest
+event. A failure rolls the complete operation back. Invalid chains refuse new
+finding and audit appends. Fingerprint de-duplication prevents repeated
 Watchdog notifications and reconciliation passes from adding the same finding
 for the same state.
 
-V2 also persists every monitoring scan in `scan_runs`. Each completed scan
-stores a row per observed regular file in `file_observations` and any scoped
-scanner errors in `observation_errors`. A deterministic manifest over those
-rows is included in a `scan_completed` audit event in the same SQLite write
-transaction. Failed scan attempts create a `scan_failed` event with no invented
-file observations. The `history` CLI and Scan History dashboard page expose
-these records; `verify-evidence` recomputes the manifests and checks their
-matching audit events. This is a point-in-time observation history, not a
-recording of every transient filesystem state.
+The V2 observation ledger stores a row per observed regular file in
+`file_observations` and any scoped scanner errors in `observation_errors`.
+A deterministic manifest over those rows is included in a `scan_completed`
+audit event in the same transaction. Failed scan attempts create a
+`scan_failed` event with no invented file observations. The `history` CLI and
+Scan History dashboard expose scan details, including file observations and
+scanner errors; `verify-evidence` checks foreign keys, orphan records,
+manifests, and matching audit events. This is a point-in-time observation
+history, not a recording of every transient filesystem state.
 
 ### Evaluation and dashboard
 
