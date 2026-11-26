@@ -137,7 +137,7 @@ def _record(db_path, *, trigger, mode, started, completed, status,
                 if state != "finding" or fingerprint in active_fingerprints:
                     continue
                 prior_path = prior_payload.get("file_path")
-                path_unobserved = any(
+                path_unobserved = isinstance(prior_path, str) and any(
                     failed_path == "." or prior_path == failed_path
                     or prior_path.startswith(failed_path.rstrip("/") + "/")
                     for failed_path in errors
@@ -223,6 +223,9 @@ def verify_observation_history(db_path):
         for row in connection.execute("SELECT timestamp_utc,event_type,record_data FROM audit_log WHERE event_type IN ('scan_completed','scan_failed')"):
             data = json.loads(row["record_data"])
             sid = data.get("scan_id")
+            if type(sid) is not int or sid <= 0:
+                return {"status":"invalid","valid":False,"scans_checked":0,
+                        "message":"Malformed scan audit event: missing or invalid scan_id"}
             if sid in events:
                 return {"status":"invalid","valid":False,"scans_checked":0,"message":f"Duplicate audit event for scan {sid}"}
             events[sid] = (row["event_type"],data,row["timestamp_utc"])
