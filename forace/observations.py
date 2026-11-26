@@ -71,7 +71,7 @@ def _payload(files, errors):
     return body, hashlib.sha256(canonical_json(body).encode()).hexdigest()
 
 def _record(db_path, *, trigger, mode, started, completed, status,
-            files, errors, findings_count, error_message=None):
+            files, errors, findings_count, error_message=None, finding_records=()):
     body, digest = _payload(files, errors)
     connection = get_connection(db_path)
     try:
@@ -93,6 +93,51 @@ def _record(db_path, *, trigger, mode, started, completed, status,
         connection.executemany(
           "INSERT INTO observation_errors(scan_id,path,error) VALUES(?,?,?)",
           [(scan_id,x["path"],x["error"]) for x in body["errors"]])
+
+        # Commit findings, finding audit events, and this scan as one unit.
+        active_fingerprints = set()
+        newly_stored = []
+        for item in finding_records:
+            finding = item["finding"]
+            fingerprint = item["fingerprint"]
+            if not isinstance(fingerprint, str) or len(fingerprint) != 64:
+                raise ValueError("Each finding requires a SHA-256 fingerprint")
+            active_fingerprints.add(fingerprint)
+            previous = connection.execute(
+                "SELECT event_type FROM audit_log WHERE event_type IN ('finding','finding_cleared') "
+                "AND json_extract(record_data, '$.fingerprint')=? ORDER BY id DESC LIMIT 1",
+                (fingerprint,),
+            ).fetchone()
+            if previous and previous["event_type"] == "finding":
+                continue
+            connection.execute(
+                "INSERT INTO findings(timestamp_utc,file_path,change_type,rule_id,severity,attack_id,explanation,scan_id) "
+                "VALUES(?,?,?,?,?,?,?,?)",
+                (completed, finding["file_path"], finding["change_type"], finding.get("rule_id"),
+                 finding.get("severity"), finding.get("attack_id"), finding.get("explanation"), scan_id),
+            )
+            _append_audit_in_transaction(
+                connection, "finding",
+                canonical_json({"fingerprint": fingerprint, "finding": finding, "scan_id": scan_id}),
+                completed,
+            )
+            newly_stored.append(finding)
+
+        latest_states = {}
+        for row in connection.execute(
+            "SELECT event_type,record_data FROM audit_log "
+            "WHERE event_type IN ('finding','finding_cleared') ORDER BY id"
+        ):
+            payload = json.loads(row["record_data"])
+            fingerprint = payload.get("fingerprint")
+            if fingerprint:
+                latest_states[fingerprint] = row["event_type"]
+        for fingerprint, state in latest_states.items():
+            if state == "finding" and fingerprint not in active_fingerprints:
+                _append_audit_in_transaction(
+                    connection, "finding_cleared", canonical_json({"fingerprint": fingerprint}), completed
+                )
+
         event = "scan_failed" if status == "failed" else "scan_completed"
         data = {"scan_id":scan_id,"trigger":trigger,"mode":mode,"status":status,
                 "started_at_utc":started,"completed_at_utc":completed,
@@ -102,7 +147,8 @@ def _record(db_path, *, trigger, mode, started, completed, status,
         _append_audit_in_transaction(connection,event,canonical_json(data),completed)
         connection.commit()
         return {"scan_id":scan_id,"status":status,"manifest_sha256":digest,
-                "files_observed":len(files),"errors_count":len(errors)}
+                "files_observed":len(files),"errors_count":len(errors),
+                "new_findings":newly_stored if status != "failed" else []}
     except BaseException:
         connection.rollback()
         raise
@@ -110,7 +156,7 @@ def _record(db_path, *, trigger, mode, started, completed, status,
         connection.close()
 
 def record_scan(db_path, scan_result, *, trigger, mode, findings_count,
-                started_at_utc=None, completed_at_utc=None):
+                started_at_utc=None, completed_at_utc=None, finding_records=()):
     if mode not in {"smart","hash-only"} or not isinstance(trigger,str) or not trigger.strip():
         raise ValueError("A valid mode and non-empty trigger are required")
     if type(findings_count) is not int or findings_count < 0:
@@ -121,8 +167,11 @@ def record_scan(db_path, scan_result, *, trigger, mode, findings_count,
     started = _validate_utc(started_at_utc or _now(), "started_at_utc")
     completed = _validate_utc(completed_at_utc or _now(), "completed_at_utc")
     status = "completed_with_errors" if errors else "completed"
+    if not isinstance(finding_records, (list, tuple)):
+        raise ValueError("finding_records must be a list or tuple")
     return _record(db_path,trigger=trigger,mode=mode,started=started,completed=completed,
-                   status=status,files=files,errors=errors,findings_count=findings_count)
+                   status=status,files=files,errors=errors,findings_count=findings_count,
+                   finding_records=finding_records)
 
 def record_failed_scan(db_path, *, trigger, mode, error_message):
     if mode not in {"smart","hash-only"} or not isinstance(trigger,str) or not trigger.strip():
