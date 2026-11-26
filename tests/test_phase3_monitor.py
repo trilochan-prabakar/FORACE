@@ -307,3 +307,13 @@ def test_monitor_records_failed_observation_when_baseline_authentication_fails(t
     assert "signature" in row[1].lower()
     from forace.observations import verify_observation_history
     assert verify_observation_history(db)["status"] == "valid"
+
+
+def test_partial_observation_sets_monitor_error_state(tmp_path):
+    monitor, _, db = make_monitor(tmp_path, debounce=0)
+    result = {"files": {}, "errors": {"sample.txt": "Permission denied"}}
+    monitor.reconcile_once(scan_result=result)
+    assert "1 scanner error" in monitor.last_error
+    with sqlite3.connect(db) as connection:
+        status = connection.execute("SELECT status FROM scan_runs ORDER BY id DESC LIMIT 1").fetchone()[0]
+    assert status == "completed_with_errors"
