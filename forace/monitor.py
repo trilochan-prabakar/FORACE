@@ -5,6 +5,7 @@ import os
 import sqlite3
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from watchdog.events import FileSystemEventHandler
@@ -14,6 +15,7 @@ from forace.auth import load_authenticated_baseline
 from forace.detection import compare_scans
 from forace.scanner import scan_directory
 from forace.store import canonical_json, initialize_database, store_finding_once, verify_audit_chain, clear_inactive_findings
+from forace.observations import ensure_observation_schema, record_failed_scan, record_scan
 
 
 TEMP_SUFFIXES = {".swp", ".tmp", ".temp", ".part", ".lock"}
@@ -57,6 +59,7 @@ class IntegrityMonitor(FileSystemEventHandler):
             if audit_status["status"] not in {"empty", "valid"}:
                 raise RuntimeError(f"Refusing to initialize an invalid audit database: {audit_status['message']}")
         initialize_database(self.db_path)
+        ensure_observation_schema(self.db_path)
 
     def _trusted_baseline(self):
         baseline = load_authenticated_baseline(self.baseline_path, self.key_path, self.signature_path)
@@ -73,8 +76,9 @@ class IntegrityMonitor(FileSystemEventHandler):
         name = Path(path).name
         return name.endswith("~") or Path(name).suffix.lower() in TEMP_SUFFIXES or name.startswith(".#")
 
-    def process_scan(self, scan_result=None):
-        """Verify baseline trust, compare a scan, and persist each finding once."""
+    def process_scan(self, scan_result=None, *, trigger="manual"):
+        """Compare a scan and persist findings plus its observation manifest."""
+        started = datetime.now(timezone.utc).isoformat()
         with self._scan_lock:
             baseline = self._trusted_baseline()
             current = scan_result if scan_result is not None else scan_directory(self.root)
@@ -93,12 +97,24 @@ class IntegrityMonitor(FileSystemEventHandler):
                 if store_finding_once(self.db_path, finding, fingerprint):
                     stored.append(finding)
             clear_inactive_findings(self.db_path, active_fingerprints)
+            self.last_scan = record_scan(
+                self.db_path, current, trigger=trigger, mode=self.mode,
+                findings_count=len(findings), started_at_utc=started,
+            )
             self.last_error = None
             return stored
 
-    def reconcile_once(self, scan_result=None):
+    def _record_failure(self, trigger, error):
+        self.last_error = str(error)
+        try:
+            record_failed_scan(self.db_path, trigger=trigger, mode=self.mode,
+                               error_message=self.last_error)
+        except (OSError, ValueError, RuntimeError, sqlite3.Error) as audit_error:
+            LOGGER.error("Could not persist failed scan state: %s", audit_error)
+
+    def reconcile_once(self, scan_result=None, *, trigger="reconciliation"):
         """Run one full scan independently of watchdog event delivery."""
-        return self.process_scan(scan_result=scan_result)
+        return self.process_scan(scan_result=scan_result, trigger=trigger)
 
     def handle_event(self, event_type, src_path, dest_path=None, *, is_directory=False):
         """Process a relevant in-root event after suppressing duplicate bursts."""
@@ -117,7 +133,7 @@ class IntegrityMonitor(FileSystemEventHandler):
             self.last_error = None
             return self.process_scan()
         except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
-            self.last_error = str(error)
+            self._record_failure(f"watchdog:{event_type}", error)
             LOGGER.warning("Filesystem event scan failed: %s", error)
             return []
 
@@ -143,9 +159,9 @@ class IntegrityMonitor(FileSystemEventHandler):
     def _reconciliation_loop(self):
         while not self._stop_event.wait(self.reconcile_interval):
             try:
-                self.reconcile_once()
+                self.reconcile_once(trigger="reconciliation")
             except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
-                self.last_error = str(error)
+                self._record_failure("reconciliation", error)
                 LOGGER.warning("Periodic reconciliation failed: %s", error)
 
     def start(self):
@@ -156,7 +172,7 @@ class IntegrityMonitor(FileSystemEventHandler):
         audit_status = verify_audit_chain(self.db_path)
         if audit_status["status"] not in {"empty", "valid"}:
             raise RuntimeError(f"Refusing to monitor with an invalid audit chain: {audit_status['message']}")
-        self.reconcile_once()
+        self.reconcile_once(trigger="startup")
         observer = Observer()
         observer.schedule(self, str(self.root), recursive=True)
         observer.start()
