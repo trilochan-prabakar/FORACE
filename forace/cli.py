@@ -19,7 +19,7 @@ from forace.paths import (
 from forace.recovery import establish_recovery_baseline
 from forace.scanner import scan_directory
 from forace.store import append_audit_record, get_connection, initialize_database, verify_audit_chain
-from forace.observations import load_scan_history, verify_observation_history
+from forace.observations import ensure_observation_schema, load_scan_history, verify_observation_history
 
 
 def _add_storage_arguments(parser):
@@ -105,6 +105,7 @@ def _initialize(args):
     save_baseline(baseline, baseline_path, approve_update=args.approve_update)
     sign_baseline(baseline_path, key_path, signature_path, approve_replace=args.approve_update)
     initialize_database(args.db)
+    ensure_observation_schema(args.db)
     chain = verify_audit_chain(args.db)
     if chain["status"] not in {"empty", "valid"}:
         raise RuntimeError(f"Refusing to append to invalid audit log: {chain['message']}")
