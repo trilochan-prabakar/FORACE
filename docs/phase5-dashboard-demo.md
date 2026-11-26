@@ -96,7 +96,7 @@ workspace. Do not share key contents or sensitive local paths.
 
 ## Capturing screenshots
 
-Capture each of the six sections separately. For populated findings, run
+Capture each of the seven sections separately. For populated findings, run
 `venv/bin/python -B demo.py --keep` and enter its temporary data-source paths.
 The retained database intentionally fails audit verification. Do not edit
 screenshots to imply that a failed or empty state passed. Redact local paths and
