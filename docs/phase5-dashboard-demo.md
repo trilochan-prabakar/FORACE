@@ -109,7 +109,7 @@ never show HMAC key contents.
 - This is a local single-user dashboard without login or remote access
   controls. Keep Streamlit bound to localhost unless a separate deployment
   security design is added.
-- The dashboard reads findings, not a complete filesystem event history.
+- The dashboard exposes recorded point-in-time file observations and scanner errors, but it does not retain raw Watchdog notifications or prove transient states between scans.
 - Monitor status is a PID and heartbeat check; it cannot prove the watcher's
   internal health or detect a compromised host.
 - Baseline authentication requires the correct locally protected key and
