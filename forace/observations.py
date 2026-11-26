@@ -94,8 +94,7 @@ def _record(db_path, *, trigger, mode, started, completed, status,
                 "started_at_utc":started,"completed_at_utc":completed,
                 "files_observed":len(files),"errors_count":len(errors),
                 "findings_count":findings_count,"manifest_sha256":digest}
-        if error_message:
-            data["error_message"] = error_message
+        data["error_message"] = error_message
         _append_audit_in_transaction(connection,event,canonical_json(data),completed)
         connection.commit()
         return {"scan_id":scan_id,"status":status,"manifest_sha256":digest,
@@ -173,7 +172,10 @@ def verify_observation_history(db_path):
                 or len(file_rows) != run["files_observed"] or len(error_rows) != run["errors_count"]
                 or run["status"] != data.get("status")
                 or run["trigger"] != data.get("trigger") or run["mode"] != data.get("mode")
+                or run["files_observed"] != data.get("files_observed")
+                or run["errors_count"] != data.get("errors_count")
                 or run["findings_count"] != data.get("findings_count")
+                or run["error_message"] != data.get("error_message")
                 or run["started_at_utc"] != data.get("started_at_utc")
                 or run["completed_at_utc"] != data.get("completed_at_utc")
                 or run["completed_at_utc"] != event[2]
