@@ -14,7 +14,7 @@ from watchdog.observers import Observer
 from forace.auth import load_authenticated_baseline
 from forace.detection import compare_scans
 from forace.scanner import scan_directory
-from forace.store import canonical_json, initialize_database, store_finding_once, verify_audit_chain, clear_inactive_findings
+from forace.store import canonical_json, initialize_database, verify_audit_chain
 from forace.observations import ensure_observation_schema, record_failed_scan, record_scan
 
 
@@ -85,8 +85,7 @@ class IntegrityMonitor(FileSystemEventHandler):
             baseline = self._trusted_baseline()
             current = scan_result if scan_result is not None else scan_directory(self.root)
             findings = compare_scans(baseline, current, mode=self.mode)
-            stored = []
-            active_fingerprints = []
+            finding_records = []
             for finding in findings:
                 entry = current.get("files", {}).get(finding["file_path"], {})
                 fingerprint_payload = canonical_json({
@@ -94,18 +93,18 @@ class IntegrityMonitor(FileSystemEventHandler):
                     "current_sha256": entry.get("sha256"),
                     "baseline_sha256": baseline["files"].get(finding["file_path"], {}).get("sha256"),
                 }).encode("utf-8")
-                fingerprint = hashlib.sha256(fingerprint_payload).hexdigest()
-                active_fingerprints.append(fingerprint)
-                if store_finding_once(self.db_path, finding, fingerprint):
-                    stored.append(finding)
-            clear_inactive_findings(self.db_path, active_fingerprints)
+                finding_records.append({
+                    "finding": finding,
+                    "fingerprint": hashlib.sha256(fingerprint_payload).hexdigest(),
+                })
             self.last_scan = record_scan(
                 self.db_path, current, trigger=trigger, mode=self.mode,
                 findings_count=len(findings), started_at_utc=started,
+                finding_records=finding_records,
             )
             self.last_error = (f"Latest scan completed with {len(current['errors'])} scanner error(s)"
                                if current.get("errors") else None)
-            return stored
+            return self.last_scan["new_findings"]
 
     def _record_failure(self, trigger, error):
         self.last_error = str(error)
