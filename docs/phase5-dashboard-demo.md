@@ -61,6 +61,8 @@ signature paths unless explicit alternatives are supplied.
 - **Evaluation:** detection, false-positive, and false-negative rates;
   smart/hash-only scenario comparison; rule coverage; and measured benign and
   attack scenario outcomes loaded from `results.csv`.
+- **Scan History:** scan lifecycle, per-file SHA-256/metadata observations,
+  scanner errors, manifest digests, and audit-linked evidence verification.
 - **Demo / About:** project architecture, demo commands, and known limitations.
 
 ## Repeatable demo
