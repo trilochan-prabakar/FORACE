@@ -282,10 +282,9 @@ venv/bin/python -B evaluate.py --output-dir /tmp/FORACE-evaluation
 
 The output directory receives `results.csv` and `evaluation_report.md`.
 Every scenario uses a separate copied lab and fresh baseline/key/signature.
-Metrics are recalculated from the generated rows. Current measured results for
-the documented corpus are 12/12 expected attack rules detected, 0/4 benign
-false-positive scenarios in smart mode, 11/12 hash-only attack detections, and
-3/4 hash-only benign alerts. These are corpus results, not real-world rates.
+Metrics are recalculated from the generated rows. The expanded V2 corpus contains 20 attack scenarios and 10 benign scenarios.
+Run the command to generate the measured V2 metrics; previous V1 metrics are
+not carried forward as V2 results. These are corpus results, not real-world rates.
 See [evaluation methodology and results](docs/phase4-evaluation.md).
 
 ## CLI reference
