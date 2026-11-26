@@ -434,9 +434,10 @@ def render_findings(loaded):
         else:
             st.info("No findings have been recorded yet. The database is available for future monitored events.")
         return
-    cols = ["timestamp_utc", "severity", "file_path", "change_type", "rule_id"]
+    cols = ["timestamp_utc", "severity", "file_path", "change_type", "rule_id", "scan_id"]
     frame = pd.DataFrame([{k: row.get(k) for k in cols} for row in visible])
-    frame.columns = ["Timestamp (UTC)", "Severity", "File path", "Change type", "Rule ID"]
+    frame["scan_id"] = frame["scan_id"].fillna("Legacy")
+    frame.columns = ["Timestamp (UTC)", "Severity", "File path", "Change type", "Rule ID", "Scan ID"]
     st.dataframe(frame, width="stretch", hide_index=True, column_config={
         "Timestamp (UTC)": st.column_config.DatetimeColumn(format="YYYY-MM-DD HH:mm:ss"),
         "Severity": st.column_config.TextColumn(width="small"),
@@ -459,7 +460,11 @@ def render_findings(loaded):
                     st.markdown(f"**MITRE ATT&CK:** [{technique}](https://attack.mitre.org/techniques/{technique.replace('.', '/')}/)")
                 else:
                     st.write(f"**MITRE ATT&CK:** {technique}")
-            st.caption(f"Finding record {finding.get('id')} · {finding.get('timestamp_utc')}")
+            scan_reference = finding.get("scan_id")
+            st.caption(
+                f"Finding record {finding.get('id')} · {finding.get('timestamp_utc')} · "
+                + (f"originating scan {scan_reference}" if scan_reference is not None else "legacy finding without scan provenance")
+            )
 
 
 def render_file_integrity(root, baseline_path, key_path, signature_path):
