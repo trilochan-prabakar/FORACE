@@ -82,6 +82,7 @@ def _record(db_path, *, trigger, mode, started, completed, status,
           [(scan_id,x["path"],x["error"]) for x in body["errors"]])
         event = "scan_failed" if status == "failed" else "scan_completed"
         data = {"scan_id":scan_id,"trigger":trigger,"mode":mode,"status":status,
+                "started_at_utc":started,"completed_at_utc":completed,
                 "files_observed":len(files),"errors_count":len(errors),
                 "findings_count":findings_count,"manifest_sha256":digest}
         if error_message:
@@ -135,12 +136,12 @@ def verify_observation_history(db_path):
             return {"status":"invalid","valid":False,"scans_checked":0,"message":f"Audit chain is {audit['status']}: {audit['message']}"}
         runs = connection.execute("SELECT * FROM scan_runs ORDER BY id").fetchall()
         events = {}
-        for row in connection.execute("SELECT event_type,record_data FROM audit_log WHERE event_type IN ('scan_completed','scan_failed')"):
+        for row in connection.execute("SELECT timestamp_utc,event_type,record_data FROM audit_log WHERE event_type IN ('scan_completed','scan_failed')"):
             data = json.loads(row["record_data"])
             sid = data.get("scan_id")
             if sid in events:
                 return {"status":"invalid","valid":False,"scans_checked":0,"message":f"Duplicate audit event for scan {sid}"}
-            events[sid] = (row["event_type"],data)
+            events[sid] = (row["event_type"],data,row["timestamp_utc"])
         if not runs and not events:
             return {"status":"empty","valid":True,"scans_checked":0,"message":"No scan observations have been recorded"}
         for run in runs:
@@ -160,7 +161,13 @@ def verify_observation_history(db_path):
             data = event[1]
             if (digest != run["manifest_sha256"] or digest != data.get("manifest_sha256")
                 or len(file_rows) != run["files_observed"] or len(error_rows) != run["errors_count"]
-                or run["status"] != data.get("status")):
+                or run["status"] != data.get("status")
+                or run["trigger"] != data.get("trigger") or run["mode"] != data.get("mode")
+                or run["findings_count"] != data.get("findings_count")
+                or run["started_at_utc"] != data.get("started_at_utc")
+                or run["completed_at_utc"] != data.get("completed_at_utc")
+                or run["completed_at_utc"] != event[2]
+                or (run["status"] == "failed" and run["error_message"] != data.get("error_message"))):
                 return {"status":"invalid","valid":False,"scans_checked":sid-1,"message":f"Observation manifest mismatch for scan {sid}"}
         if events:
             return {"status":"invalid","valid":False,"scans_checked":len(runs),"message":"Orphaned scan audit event"}
