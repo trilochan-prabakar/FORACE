@@ -199,3 +199,22 @@ def test_v1_audit_verification_remains_compatible_before_v3_migration(tmp_path):
     initialize_database(db)
     assert verify_audit_chain(db)["status"] == "empty"
     assert verify_observation_history(db)["status"] == "unavailable"
+
+
+
+def test_v1_finding_and_audit_rows_survive_scan_provenance_migration(tmp_path):
+    from forace.store import store_finding_once, verify_audit_chain
+
+    db = tmp_path / "legacy-findings.db"
+    initialize_database(db)
+    finding = {
+        "file_path": "etc/legacy.conf", "change_type": "modified", "rule_id": None,
+        "severity": None, "attack_id": None, "explanation": None,
+    }
+    assert store_finding_once(db, finding, "e" * 64) is True
+    assert verify_audit_chain(db)["status"] == "valid"
+    ensure_observation_schema(db)
+    assert verify_audit_chain(db)["status"] == "valid"
+    with sqlite3.connect(db) as con:
+        row = con.execute("SELECT scan_id,file_path FROM findings").fetchone()
+    assert row == (None, "etc/legacy.conf")
