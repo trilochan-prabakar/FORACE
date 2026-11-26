@@ -11,6 +11,15 @@ SCHEMA_VERSION = 2
 def _now():
     return datetime.now(timezone.utc).isoformat()
 
+def _validate_utc(value, field):
+    try:
+        parsed = datetime.fromisoformat(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{field} must be an ISO 8601 timestamp") from error
+    if parsed.tzinfo is None or parsed.utcoffset().total_seconds() != 0:
+        raise ValueError(f"{field} must be timezone-aware UTC")
+    return value
+
 def ensure_observation_schema(db_path):
     connection = get_connection(db_path)
     try:
@@ -106,8 +115,8 @@ def record_scan(db_path, scan_result, *, trigger, mode, findings_count,
     files, errors = scan_result.get("files",{}), scan_result.get("errors",{})
     if not isinstance(files,dict) or not isinstance(errors,dict):
         raise ValueError("scan_result must contain file and error mappings")
-    started = started_at_utc or _now()
-    completed = completed_at_utc or _now()
+    started = _validate_utc(started_at_utc or _now(), "started_at_utc")
+    completed = _validate_utc(completed_at_utc or _now(), "completed_at_utc")
     status = "completed_with_errors" if errors else "completed"
     return _record(db_path,trigger=trigger,mode=mode,started=started,completed=completed,
                    status=status,files=files,errors=errors,findings_count=findings_count)
@@ -116,8 +125,9 @@ def record_failed_scan(db_path, *, trigger, mode, error_message):
     if mode not in {"smart","hash-only"} or not isinstance(trigger,str) or not trigger.strip():
         raise ValueError("A valid mode and non-empty trigger are required")
     now = _now()
+    message = str(error_message)[:2000] or "Unknown scan failure"
     return _record(db_path,trigger=trigger,mode=mode,started=now,completed=now,status="failed",
-                   files={},errors={},findings_count=0,error_message=str(error_message)[:2000])
+                   files={},errors={},findings_count=0,error_message=message)
 
 def verify_observation_history(db_path):
     path = Path(db_path)
