@@ -100,6 +100,8 @@ def test_evaluation_writes_raw_csv_and_report_consistently(tmp_path):
     assert summary["hash_only_benign_alert_scenarios"] == 9
     report = first["report_path"].read_text(encoding="utf-8")
     assert "Detection rate" in report and "False-positive rate" in report
+    assert "20 attack scenarios" in report and "10 benign scenarios" in report
+    assert "one scenario per rule" not in report
 
 
 def test_isolated_simulation_copy_does_not_change_source_files(tmp_path):
