@@ -52,3 +52,23 @@ def test_v1_database_reports_history_unavailable(tmp_path):
     db=tmp_path/"state.db"; initialize_database(db)
     assert load_scan_history(db)["status"] == "unavailable"
     assert verify_observation_history(db)["status"] == "unavailable"
+
+
+def test_scan_lifecycle_metadata_tampering_is_detected(tmp_path):
+    db=tmp_path/"state.db"; initialize_database(db); ensure_observation_schema(db)
+    record_scan(db,sample(),trigger="startup",mode="smart",findings_count=1)
+    with sqlite3.connect(db) as con:
+        con.execute("UPDATE scan_runs SET trigger='forged-trigger'")
+    result=verify_observation_history(db)
+    assert result["status"] == "invalid"
+
+
+def test_invalid_timezone_is_rejected_before_writing(tmp_path):
+    db=tmp_path/"state.db"; initialize_database(db); ensure_observation_schema(db)
+    try:
+        record_scan(db,sample(),trigger="manual",mode="smart",findings_count=0,
+                    started_at_utc="2026-01-01T12:00:00")
+    except ValueError as error:
+        assert "UTC" in str(error)
+    else:
+        raise AssertionError("naive scan timestamp was accepted")
