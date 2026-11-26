@@ -96,6 +96,8 @@ def test_evaluation_writes_raw_csv_and_report_consistently(tmp_path):
     assert set(summary["rule_wise_coverage"]) == {f"R{i:02}" for i in range(1, 13)}
     assert summary["successfully_detected_attack_scenarios"] == 20
     assert summary["false_positive_scenarios"] == 0
+    assert summary["hash_only_detected_attack_scenarios"] == 18
+    assert summary["hash_only_benign_alert_scenarios"] == 9
     report = first["report_path"].read_text(encoding="utf-8")
     assert "Detection rate" in report and "False-positive rate" in report
 
