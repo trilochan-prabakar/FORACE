@@ -52,6 +52,10 @@ def ensure_observation_schema(db_path):
         CREATE INDEX IF NOT EXISTS idx_scan_runs_completed ON scan_runs(completed_at_utc,id);
         CREATE INDEX IF NOT EXISTS idx_observations_path ON file_observations(file_path,scan_id);
         """)
+        columns = {row["name"] for row in connection.execute("PRAGMA table_info(findings)")}
+        if "scan_id" not in columns:
+            connection.execute("ALTER TABLE findings ADD COLUMN scan_id INTEGER REFERENCES scan_runs(id)")
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_findings_scan_id ON findings(scan_id)")
         connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         connection.commit()
     finally:
