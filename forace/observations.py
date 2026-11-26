@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from forace.store import _append_audit_in_transaction, _verify_audit_connection, canonical_json, get_connection
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 def _now():
     return datetime.now(timezone.utc).isoformat()
