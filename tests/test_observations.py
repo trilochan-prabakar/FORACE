@@ -137,6 +137,9 @@ def test_findings_are_linked_to_scan_and_committed_with_manifest(tmp_path):
         ).fetchone()[0]
     assert row[0] == recorded["scan_id"]
     assert '"scan_id":1' in audit_payload
+    from forace.dashboard_data import load_findings
+    loaded = load_findings(db)
+    assert loaded["findings"][0]["scan_id"] == recorded["scan_id"]
     assert verify_observation_history(db)["status"] == "valid"
 
 
