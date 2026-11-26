@@ -26,12 +26,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: requirements-lock.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-lock.txt
 
       - name: Compile Python modules
         run: python -m compileall -q forace attacks tests dashboard.py demo.py evaluate.py make_lab.py
