@@ -116,6 +116,7 @@ def test_checked_in_results_csv_matches_expanded_v2_corpus():
     result = load_evaluation_results(PROJECT / "results.csv")
     assert result["status"] == "available"
     assert len(result["rows"]) == 30
+    assert [row["scenario_id"] for row in result["rows"]] == [scenario.scenario_id for scenario in SCENARIOS]
     assert result["metrics"]["total_attack_scenarios"] == 20
     assert result["metrics"]["total_benign_scenarios"] == 10
     assert result["metrics"]["successfully_detected_attack_scenarios"] == 20
