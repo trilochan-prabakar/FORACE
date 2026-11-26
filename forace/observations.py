@@ -222,8 +222,18 @@ def load_scan_history(db_path, limit=50):
         if "scan_runs" not in tables:
             return {"status":"unavailable","message":"Scan history is not available in this V1 database","scans":[]}
         scans = [dict(r) for r in connection.execute("SELECT * FROM scan_runs ORDER BY id DESC LIMIT ?",(limit,))]
+        for scan in scans:
+            sid = scan["id"]
+            scan["files"] = [dict(row) for row in connection.execute(
+                "SELECT file_path,sha256,size,mode,uid,gid,mtime_ns FROM file_observations WHERE scan_id=? ORDER BY file_path",
+                (sid,),
+            )] if "file_observations" in tables else []
+            scan["errors"] = [dict(row) for row in connection.execute(
+                "SELECT path,error FROM observation_errors WHERE scan_id=? ORDER BY path",
+                (sid,),
+            )] if "observation_errors" in tables else []
         count = connection.execute("SELECT COUNT(*) FROM scan_runs").fetchone()[0]
-        return {"status":"available","message":f"Loaded {len(scans)} scan records","scans":scans,"count":count}
+        return {"status":"available","message":f"Loaded {len(scans)} scan records with file details","scans":scans,"count":count}
     except (sqlite3.Error,OSError) as error:
         return {"status":"error","message":f"Could not load scan history: {error}","scans":[]}
     finally:
