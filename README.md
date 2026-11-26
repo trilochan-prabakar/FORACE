@@ -70,8 +70,8 @@ The project aims to:
 - Watchdog events with debouncing and independent periodic full reconciliation
   (`--interval`, 30 seconds by default).
 - HMAC-SHA256 baseline authentication using a 32-byte, owner-only key.
-- SQLite findings and sequential SHA-256 hash-chained audit records.
-- V2 scan lifecycle history with per-file SHA-256/metadata observations, explicit partial/failed scan states, and audit-linked manifest verification.
+- SQLite findings linked to their originating scan through `scan_id`, with sequential SHA-256 hash-chained audit records.
+- V2 scan lifecycle history with per-file SHA-256/metadata observations, explicit partial/failed scan states, and audit-linked manifest verification. Scan observations, findings, and their audit events are committed atomically.
 - Read-only Streamlit views for system status, findings, ATT&CK links, audit
   events, and measured evaluation output.
 - Isolated attack and benign simulations, an evaluation CSV/report generator,
