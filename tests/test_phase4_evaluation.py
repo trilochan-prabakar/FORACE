@@ -22,7 +22,7 @@ def test_every_attack_simulation_triggers_its_expected_rule(scenario):
     assert row["false_negative"] is False
     assert row["explanation_covered"] is True
     assert row["attack_mapping_covered"] is True
-    assert row["hash_only_change_detected"] is (scenario.scenario_id != "R10")
+    assert row["hash_only_change_detected"] is (scenario.scenario_id not in {"R10", "V2A08"})
 
 
 @pytest.mark.parametrize("scenario", [scenario for scenario in SCENARIOS if scenario.category == "benign"], ids=lambda s: s.scenario_id)
@@ -88,12 +88,14 @@ def test_evaluation_writes_raw_csv_and_report_consistently(tmp_path):
     with first["csv_path"].open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream))
     assert len(rows) == len(SCENARIOS)
-    assert sum(row["category"] == "attack" for row in rows) == 12
-    assert sum(row["category"] == "benign" for row in rows) == 4
+    assert sum(row["category"] == "attack" for row in rows) == 20
+    assert sum(row["category"] == "benign" for row in rows) == 10
     summary = first["metrics"]
-    assert summary["total_attack_scenarios"] == 12
-    assert summary["total_benign_scenarios"] == 4
+    assert summary["total_attack_scenarios"] == 20
+    assert summary["total_benign_scenarios"] == 10
     assert set(summary["rule_wise_coverage"]) == {f"R{i:02}" for i in range(1, 13)}
+    assert summary["successfully_detected_attack_scenarios"] == 20
+    assert summary["false_positive_scenarios"] == 0
     report = first["report_path"].read_text(encoding="utf-8")
     assert "Detection rate" in report and "False-positive rate" in report
 
