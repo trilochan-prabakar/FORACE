@@ -211,7 +211,7 @@ def _write_results(rows, metrics, output_directory):
         "",
         "## Limitations",
         "",
-        "This is a deterministic, small synthetic corpus with one scenario per rule and four benign edits. It measures only the documented analyzers and command markers; it does not model a real host, arbitrary malicious commands, attacker adaptation, filesystem event delivery, or analyst judgment. R05 stores a suspicious-looking URL string in a file and never accesses it. The R10 SUID bit is set on inert text and is never executed. A perfect score here is not a general real-world detection-rate estimate.",
+        "This is a deterministic synthetic corpus with 20 attack scenarios exercising R01–R12 and 10 benign scenarios. It measures only the documented analyzers and command markers; it does not model a real host, arbitrary malicious commands, attacker adaptation, filesystem event delivery, or analyst judgment. R05 stores suspicious-looking command text in a file and never executes it. The R10 SUID bit is set on inert text and is never executed. A perfect score here is not a general real-world detection-rate estimate.",
         "",
         "Each scenario receives a fresh temporary lab copy, random HMAC key, baseline, and signature. Only those copies are modified; the source lab and project baseline are read-only inputs.",
         "",
