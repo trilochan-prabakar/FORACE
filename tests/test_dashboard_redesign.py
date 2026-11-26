@@ -235,7 +235,7 @@ def test_findings_summary_table_keeps_detail_in_the_investigation_panel(tmp_path
     app.sidebar.text_input(key="iw_db_path").set_value(str(db)).run()
     app.sidebar.button(key="nav_security_findings").click().run()
 
-    assert list(app.dataframe[0].value.columns) == ["Timestamp (UTC)", "Severity", "File path", "Change type", "Rule ID"]
+    assert list(app.dataframe[0].value.columns) == ["Timestamp (UTC)", "Severity", "File path", "Change type", "Rule ID", "Scan ID"]
     assert any("A long explanation" in item.value for item in app.markdown)
     assert not app.exception
 
