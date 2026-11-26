@@ -17,20 +17,22 @@ those bytes before parsing them; an unauthenticated baseline is not used.
 
 ```text
 Watchdog event ──> debounce ──┐
-                              ├──> complete safe scan ──> compare to trusted baseline
-periodic timer ───────────────┘                                  │
-                                                                 v
-                                              smart rules or hash-only result
-                                                                 │
-                                            fingerprint + duplicate check
-                                                                 │
-                                     BEGIN IMMEDIATE transaction
-                                       ├── finding row
-                                       └── chained audit row
+                              ├──> safe scan ──> compare to trusted baseline
+periodic timer ───────────────┘                       │
+                                                     v
+                                     findings + file observations + errors
+                                                     │
+                                      BEGIN IMMEDIATE transaction
+                                        ├── scan_runs + manifest rows
+                                        ├── findings linked by scan_id
+                                        ├── finding / clearing audit events
+                                        └── scan_completed audit event
 ```
 
 Events are hints to rescan; they are not persisted as a complete raw event
-stream. The periodic scan reduces dependence on notification delivery. If a
+stream. Findings, their `scan_id` provenance, file observations, scanner errors,
+and the scan manifest are committed together. This prevents a partially written
+scan from leaving findings without their corresponding scan record. The periodic scan reduces dependence on notification delivery. If a
 known path cannot be scanned, the detector avoids treating that path as
 deleted. Baseline authentication and audit-chain validity are checked before
 the monitor operates; invalid audit data blocks appends.

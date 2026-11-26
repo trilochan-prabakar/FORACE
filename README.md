@@ -31,6 +31,7 @@ a hash-chained audit log, repeatable simulations, and a Streamlit dashboard.
 - [Simulations and evaluation](#simulations-and-evaluation)
 - [CLI reference](#cli-reference)
 - [Documentation](#documentation)
+- [Testing](#testing)
 - [Limitations](#limitations)
 
 ## Problem and objectives
@@ -69,8 +70,8 @@ The project aims to:
 - Watchdog events with debouncing and independent periodic full reconciliation
   (`--interval`, 30 seconds by default).
 - HMAC-SHA256 baseline authentication using a 32-byte, owner-only key.
-- SQLite findings and sequential SHA-256 hash-chained audit records.
-- V2 scan lifecycle history with per-file SHA-256/metadata observations, explicit partial/failed scan states, and audit-linked manifest verification.
+- SQLite findings linked to their originating scan through `scan_id`, with sequential SHA-256 hash-chained audit records.
+- V2 scan lifecycle history with per-file SHA-256/metadata observations, explicit partial/failed scan states, and audit-linked manifest verification. Scan observations, findings, and their audit events are committed atomically.
 - Read-only Streamlit views for system status, findings, ATT&CK links, audit
   events, and measured evaluation output.
 - Isolated attack and benign simulations, an evaluation CSV/report generator,
@@ -79,19 +80,20 @@ The project aims to:
 ## Architecture
 
 ```text
-synthetic lab/
-    │
-    ├── scanner ──> SHA-256 + metadata + bounded text snapshots
-    │                    │
-signed baseline ─────────┤
-                         ├── smart semantic rules / hash-only comparison
-watchdog events ─────────┤                 │
-periodic reconciliation ─┘                 v
-                                     SQLite findings
-                                     SHA-256 audit chain
-                                          │
-                       Streamlit read-only dashboard
-                       evaluation results.csv / report
+synthetic lab/ ──> scanner ──> SHA-256 + metadata + bounded snapshots
+                         │
+signed baseline ──> HMAC authentication ──> smart / hash-only comparison
+watchdog events ──> debounce ──┐                    │
+periodic reconciliation ──────┴──> safe scan ──────┘
+                                                   v
+                                  one SQLite transaction per scan
+                                  ├── scan_runs + file observations
+                                  ├── scanner errors + manifest
+                                  ├── findings linked by scan_id
+                                  └── SHA-256 chained audit events
+                                                   │
+                                  read-only Streamlit dashboard
+                                  + reproducible evaluation artifacts
 ```
 
 The monitor rescans the sandbox after relevant filesystem events and at a
@@ -102,7 +104,7 @@ for module responsibilities and details.
 
 ## Technology
 
-- Python 3.10 or later; tested in the supplied Python 3.12 environment.
+- Python 3.11 or later; CI tests Python 3.11 and 3.12. Direct dependencies are pinned in `requirements.txt`; `requirements-lock.txt` records the complete resolved Linux CI environment for repeatable installs.
 - Watchdog for filesystem event notifications.
 - PyYAML for the local rule file.
 - SQLite for findings and audit records.
@@ -126,7 +128,7 @@ sudo apt update
 sudo apt install -y python3 python3-venv python3-pip
 python3 -m venv venv
 venv/bin/python -m pip install --upgrade pip
-venv/bin/python -m pip install -r requirements.txt
+venv/bin/python -m pip install -r requirements-lock.txt
 ```
 
 Run commands from the project root. Use `venv/bin/python` so the application,
@@ -244,8 +246,7 @@ binds the server to localhost. See
 
 ## Testing
 
-Latest V2 GitHub Actions validation: **215 passed in 9.47s** (Python 3.12).
-See [the V2 validation report](docs/final-test-report.md) and [changelog](CHANGELOG.md).
+GitHub Actions runs the full test suite on Python 3.11 and 3.12. The latest successful run and exact test counts are linked from the repository's Actions tab; do not treat an older test count as the current result. See [the V2 validation report](docs/final-test-report.md) and [changelog](CHANGELOG.md).
 
 Run the full suite from the project root:
 
@@ -285,7 +286,7 @@ venv/bin/python -B evaluate.py --output-dir /tmp/FORACE-evaluation
 
 The output directory receives `results.csv` and `evaluation_report.md`.
 Every scenario uses a separate copied lab and fresh baseline/key/signature.
-Metrics are recalculated from the generated rows. The expanded V2 corpus contains 20 attack scenarios and 10 benign scenarios. The test suite measures 20/20 expected-rule detections and 0/10 smart false-positive scenarios; hash-only detects 18/20 attacks and alerts on 9/10 benign content edits. These are synthetic corpus results, not real-world rates.
+Metrics are recalculated from the generated rows. The expanded V2 corpus contains 20 attack scenarios and 10 benign scenarios. The test suite measures 20/20 expected-rule detections and 0/10 smart false-positive scenarios; hash-only detects 18/20 attacks and alerts on 9/10 benign scenarios. These are synthetic corpus results, not real-world rates.
 See [evaluation methodology and results](docs/phase4-evaluation.md).
 
 ## CLI reference
@@ -293,6 +294,7 @@ See [evaluation methodology and results](docs/phase4-evaluation.md).
 | Command | Purpose | Common options |
 |---|---|---|
 | `venv/bin/python -B -m forace init lab` | Create/authenticate baseline and initialize database | `--baseline`, `--key`, `--signature`, `--db`, `--approve-update` |
+| `venv/bin/python -B -m forace rebaseline` | Create a separately reviewed recovery trust bundle | `--source-baseline`, `--source-signature`, `--recovery-dir`, `--bundle-name` |
 | `venv/bin/python -B -m forace verify` | Compare authenticated baseline to current lab | `--lab`, `--mode smart\|hash-only`, storage options |
 | `venv/bin/python -B -m forace watch` | Watch events and reconcile periodically | `--lab`, `--mode`, `--debounce`, `--interval`, storage options |
 | `venv/bin/python -B -m forace verify-log` | Read-only audit-chain check | `--db` |

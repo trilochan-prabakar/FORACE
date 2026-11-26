@@ -115,13 +115,15 @@ def _verify_audit_connection(connection):
                     finding = payload["finding"]
                     audit_findings.append((record["timestamp_utc"], finding.get("file_path"),
                         finding.get("change_type"), finding.get("rule_id"), finding.get("severity"),
-                        finding.get("attack_id"), finding.get("explanation")))
+                        finding.get("attack_id"), finding.get("explanation"), payload.get("scan_id")))
                 except (KeyError, TypeError, json.JSONDecodeError):
                     return {"status": "invalid", "valid": False, "records_checked": len(records),
                             "record_id": record["id"], "message": "Malformed finding audit record"}
+        finding_columns = {row["name"] for row in connection.execute("PRAGMA table_info(findings)")}
+        scan_id_column = "scan_id" if "scan_id" in finding_columns else "NULL AS scan_id"
         table_findings = connection.execute(
-            "SELECT timestamp_utc, file_path, change_type, rule_id, severity, attack_id, explanation "
-            "FROM findings ORDER BY id").fetchall()
+            "SELECT timestamp_utc, file_path, change_type, rule_id, severity, attack_id, explanation, "
+            + scan_id_column + " FROM findings ORDER BY id").fetchall()
         stored = [tuple(row) for row in table_findings]
         if stored != audit_findings:
             return {"status": "invalid", "valid": False, "records_checked": len(records),

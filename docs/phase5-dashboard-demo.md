@@ -18,7 +18,7 @@ a separate event stream.
 
 ## Install and start
 
-From the project root, install the dependencies in `requirements.txt` and run:
+From the project root, install the locked dependencies in `requirements-lock.txt` and run:
 
 ```bash
 venv/bin/python -m pip install -r requirements.txt
@@ -52,8 +52,8 @@ signature paths unless explicit alternatives are supplied.
   accessibility, monitor process status, finding severity counts, finding
   timeline, rule counts, and recent events read from the SQLite audit log.
 - **Security Findings:** case-insensitive search over stored finding fields,
-  severity filters, newest-first ordering, detailed explanations, and ATT&CK
-  technique links.
+  severity filters, newest-first ordering, detailed explanations, ATT&CK
+  technique links, and originating scan IDs for V2 findings.
 - **File Integrity:** read-only inventory of the project's controlled `lab/`,
   compared only with an authenticated baseline.
 - **Audit & Verification:** trust artifact status, audit-chain state, and
@@ -61,6 +61,8 @@ signature paths unless explicit alternatives are supplied.
 - **Evaluation:** detection, false-positive, and false-negative rates;
   smart/hash-only scenario comparison; rule coverage; and measured benign and
   attack scenario outcomes loaded from `results.csv`.
+- **Scan History:** scan lifecycle, per-file SHA-256/metadata observations,
+  scanner errors, manifest digests, and audit-linked evidence verification.
 - **Demo / About:** project architecture, demo commands, and known limitations.
 
 ## Repeatable demo
@@ -107,7 +109,7 @@ never show HMAC key contents.
 - This is a local single-user dashboard without login or remote access
   controls. Keep Streamlit bound to localhost unless a separate deployment
   security design is added.
-- The dashboard reads findings, not a complete filesystem event history.
+- The dashboard exposes recorded point-in-time file observations and scanner errors, but it does not retain raw Watchdog notifications or prove transient states between scans.
 - Monitor status is a PID and heartbeat check; it cannot prove the watcher's
   internal health or detect a compromised host.
 - Baseline authentication requires the correct locally protected key and

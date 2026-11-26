@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from forace.store import _append_audit_in_transaction, _verify_audit_connection, canonical_json, get_connection
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 def _now():
     return datetime.now(timezone.utc).isoformat()
@@ -52,6 +52,10 @@ def ensure_observation_schema(db_path):
         CREATE INDEX IF NOT EXISTS idx_scan_runs_completed ON scan_runs(completed_at_utc,id);
         CREATE INDEX IF NOT EXISTS idx_observations_path ON file_observations(file_path,scan_id);
         """)
+        columns = {row["name"] for row in connection.execute("PRAGMA table_info(findings)")}
+        if "scan_id" not in columns:
+            connection.execute("ALTER TABLE findings ADD COLUMN scan_id INTEGER REFERENCES scan_runs(id)")
+        connection.execute("CREATE INDEX IF NOT EXISTS idx_findings_scan_id ON findings(scan_id)")
         connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
         connection.commit()
     finally:
@@ -67,7 +71,7 @@ def _payload(files, errors):
     return body, hashlib.sha256(canonical_json(body).encode()).hexdigest()
 
 def _record(db_path, *, trigger, mode, started, completed, status,
-            files, errors, findings_count, error_message=None):
+            files, errors, findings_count, error_message=None, finding_records=()):
     body, digest = _payload(files, errors)
     connection = get_connection(db_path)
     try:
@@ -89,6 +93,61 @@ def _record(db_path, *, trigger, mode, started, completed, status,
         connection.executemany(
           "INSERT INTO observation_errors(scan_id,path,error) VALUES(?,?,?)",
           [(scan_id,x["path"],x["error"]) for x in body["errors"]])
+
+        # Commit findings, finding audit events, and this scan as one unit.
+        active_fingerprints = set()
+        newly_stored = []
+        for item in finding_records:
+            finding = item["finding"]
+            fingerprint = item["fingerprint"]
+            if not isinstance(fingerprint, str) or len(fingerprint) != 64:
+                raise ValueError("Each finding requires a SHA-256 fingerprint")
+            active_fingerprints.add(fingerprint)
+            previous = connection.execute(
+                "SELECT event_type FROM audit_log WHERE event_type IN ('finding','finding_cleared') "
+                "AND json_extract(record_data, '$.fingerprint')=? ORDER BY id DESC LIMIT 1",
+                (fingerprint,),
+            ).fetchone()
+            if previous and previous["event_type"] == "finding":
+                continue
+            connection.execute(
+                "INSERT INTO findings(timestamp_utc,file_path,change_type,rule_id,severity,attack_id,explanation,scan_id) "
+                "VALUES(?,?,?,?,?,?,?,?)",
+                (completed, finding["file_path"], finding["change_type"], finding.get("rule_id"),
+                 finding.get("severity"), finding.get("attack_id"), finding.get("explanation"), scan_id),
+            )
+            _append_audit_in_transaction(
+                connection, "finding",
+                canonical_json({"fingerprint": fingerprint, "finding": finding, "scan_id": scan_id}),
+                completed,
+            )
+            newly_stored.append(finding)
+
+        if status != "failed":
+            latest_states = {}
+            for row in connection.execute(
+                "SELECT event_type,record_data FROM audit_log "
+                "WHERE event_type IN ('finding','finding_cleared') ORDER BY id"
+            ):
+                payload = json.loads(row["record_data"])
+                fingerprint = payload.get("fingerprint")
+                if fingerprint:
+                    latest_states[fingerprint] = (row["event_type"], payload.get("finding", {}))
+            for fingerprint, (state, prior_payload) in latest_states.items():
+                if state != "finding" or fingerprint in active_fingerprints:
+                    continue
+                prior_path = prior_payload.get("file_path")
+                path_unobserved = isinstance(prior_path, str) and any(
+                    failed_path == "." or prior_path == failed_path
+                    or prior_path.startswith(failed_path.rstrip("/") + "/")
+                    for failed_path in errors
+                )
+                if path_unobserved:
+                    continue
+                _append_audit_in_transaction(
+                    connection, "finding_cleared", canonical_json({"fingerprint": fingerprint}), completed
+                )
+
         event = "scan_failed" if status == "failed" else "scan_completed"
         data = {"scan_id":scan_id,"trigger":trigger,"mode":mode,"status":status,
                 "started_at_utc":started,"completed_at_utc":completed,
@@ -98,7 +157,8 @@ def _record(db_path, *, trigger, mode, started, completed, status,
         _append_audit_in_transaction(connection,event,canonical_json(data),completed)
         connection.commit()
         return {"scan_id":scan_id,"status":status,"manifest_sha256":digest,
-                "files_observed":len(files),"errors_count":len(errors)}
+                "files_observed":len(files),"errors_count":len(errors),
+                "new_findings":newly_stored if status != "failed" else []}
     except BaseException:
         connection.rollback()
         raise
@@ -106,7 +166,7 @@ def _record(db_path, *, trigger, mode, started, completed, status,
         connection.close()
 
 def record_scan(db_path, scan_result, *, trigger, mode, findings_count,
-                started_at_utc=None, completed_at_utc=None):
+                started_at_utc=None, completed_at_utc=None, finding_records=()):
     if mode not in {"smart","hash-only"} or not isinstance(trigger,str) or not trigger.strip():
         raise ValueError("A valid mode and non-empty trigger are required")
     if type(findings_count) is not int or findings_count < 0:
@@ -117,8 +177,11 @@ def record_scan(db_path, scan_result, *, trigger, mode, findings_count,
     started = _validate_utc(started_at_utc or _now(), "started_at_utc")
     completed = _validate_utc(completed_at_utc or _now(), "completed_at_utc")
     status = "completed_with_errors" if errors else "completed"
+    if not isinstance(finding_records, (list, tuple)):
+        raise ValueError("finding_records must be a list or tuple")
     return _record(db_path,trigger=trigger,mode=mode,started=started,completed=completed,
-                   status=status,files=files,errors=errors,findings_count=findings_count)
+                   status=status,files=files,errors=errors,findings_count=findings_count,
+                   finding_records=finding_records)
 
 def record_failed_scan(db_path, *, trigger, mode, error_message):
     if mode not in {"smart","hash-only"} or not isinstance(trigger,str) or not trigger.strip():
@@ -140,6 +203,18 @@ def verify_observation_history(db_path):
         tables = {r[0] for r in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         if not {"scan_runs","file_observations","observation_errors","audit_log"} <= tables:
             return {"status":"unavailable","valid":False,"scans_checked":0,"message":"V2 observation schema is not installed"}
+        orphan_checks = [
+            ("file_observations", "SELECT COUNT(*) FROM file_observations o LEFT JOIN scan_runs s ON s.id=o.scan_id WHERE s.id IS NULL"),
+            ("observation_errors", "SELECT COUNT(*) FROM observation_errors o LEFT JOIN scan_runs s ON s.id=o.scan_id WHERE s.id IS NULL"),
+        ]
+        for table, query in orphan_checks:
+            if connection.execute(query).fetchone()[0]:
+                return {"status":"invalid","valid":False,"scans_checked":0,
+                        "message":"Orphaned rows detected in " + table}
+        foreign_key_errors = connection.execute("PRAGMA foreign_key_check").fetchall()
+        if foreign_key_errors:
+            return {"status":"invalid","valid":False,"scans_checked":0,
+                    "message":"Observation database contains foreign-key violations"}
         audit = _verify_audit_connection(connection)
         if audit["status"] not in {"empty","valid"}:
             return {"status":"invalid","valid":False,"scans_checked":0,"message":f"Audit chain is {audit['status']}: {audit['message']}"}
@@ -148,6 +223,9 @@ def verify_observation_history(db_path):
         for row in connection.execute("SELECT timestamp_utc,event_type,record_data FROM audit_log WHERE event_type IN ('scan_completed','scan_failed')"):
             data = json.loads(row["record_data"])
             sid = data.get("scan_id")
+            if type(sid) is not int or sid <= 0:
+                return {"status":"invalid","valid":False,"scans_checked":0,
+                        "message":"Malformed scan audit event: missing or invalid scan_id"}
             if sid in events:
                 return {"status":"invalid","valid":False,"scans_checked":0,"message":f"Duplicate audit event for scan {sid}"}
             events[sid] = (row["event_type"],data,row["timestamp_utc"])
@@ -206,8 +284,18 @@ def load_scan_history(db_path, limit=50):
         if "scan_runs" not in tables:
             return {"status":"unavailable","message":"Scan history is not available in this V1 database","scans":[]}
         scans = [dict(r) for r in connection.execute("SELECT * FROM scan_runs ORDER BY id DESC LIMIT ?",(limit,))]
+        for scan in scans:
+            sid = scan["id"]
+            scan["files"] = [dict(row) for row in connection.execute(
+                "SELECT file_path,sha256,size,mode,uid,gid,mtime_ns FROM file_observations WHERE scan_id=? ORDER BY file_path",
+                (sid,),
+            )] if "file_observations" in tables else []
+            scan["errors"] = [dict(row) for row in connection.execute(
+                "SELECT path,error FROM observation_errors WHERE scan_id=? ORDER BY path",
+                (sid,),
+            )] if "observation_errors" in tables else []
         count = connection.execute("SELECT COUNT(*) FROM scan_runs").fetchone()[0]
-        return {"status":"available","message":f"Loaded {len(scans)} scan records","scans":scans,"count":count}
+        return {"status":"available","message":f"Loaded {len(scans)} scan records with file details","scans":scans,"count":count}
     except (sqlite3.Error,OSError) as error:
         return {"status":"error","message":f"Could not load scan history: {error}","scans":[]}
     finally:

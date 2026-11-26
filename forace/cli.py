@@ -214,7 +214,7 @@ def main(argv=None):
         if args.command == "verify-evidence":
             result = verify_observation_history(args.db)
             print(json.dumps(result, indent=2))
-            return 0 if result["status"] in {"valid", "empty", "unavailable"} else 1
+            return 0 if result["status"] in {"valid", "empty"} else 1
     except (OSError, ValueError, RuntimeError, sqlite3.Error) as error:
         print(f"FORACE: {error}", file=sys.stderr)
         return 1

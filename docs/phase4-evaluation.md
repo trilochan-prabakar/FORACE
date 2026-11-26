@@ -38,7 +38,7 @@ The expanded 30-scenario evaluation is exercised by the V2 test suite. The measu
 - Smart mode detected **20/20 attack scenarios** (1.000 scenario-level detection rate; 0 false negatives).
 - Smart mode handled **10/10 benign scenarios** without alerts (0.000 scenario-level false-positive rate).
 - Hash-only mode detected **18/20 attack scenarios**. The two metadata-only SUID cases (R10 and V2A08) do not change content hashes.
-- Hash-only mode alerted on **9/10 benign content edits**; the timestamp-only B04 case does not change the content hash.
+- Hash-only mode alerted on **9/10 benign scenarios**; the timestamp-only B04 case does not change the content hash.
 - All expected-rule findings contain an explanation and ATT&CK mapping.
 
 These results are limited to this synthetic regression corpus. They are not a real-world detection-rate estimate. The generated CSV and Markdown report should be produced with the evaluation command when a local results artifact is required.

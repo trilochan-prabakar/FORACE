@@ -100,6 +100,8 @@ def test_evaluation_writes_raw_csv_and_report_consistently(tmp_path):
     assert summary["hash_only_benign_alert_scenarios"] == 9
     report = first["report_path"].read_text(encoding="utf-8")
     assert "Detection rate" in report and "False-positive rate" in report
+    assert "20 attack scenarios" in report and "10 benign scenarios" in report
+    assert "one scenario per rule" not in report
 
 
 def test_isolated_simulation_copy_does_not_change_source_files(tmp_path):
@@ -123,3 +125,13 @@ def test_checked_in_results_csv_matches_expanded_v2_corpus():
     assert result["metrics"]["false_positive_scenarios"] == 0
     assert result["metrics"]["hash_only_detected_attack_scenarios"] == 18
     assert result["metrics"]["hash_only_benign_alert_scenarios"] == 9
+
+
+
+def test_checked_in_evaluation_csv_matches_fresh_full_evaluation(tmp_path):
+    generated = run_evaluation(SOURCE_LAB, tmp_path / "fresh")
+    checked_in = PROJECT / "results.csv"
+    generated_csv = generated["csv_path"].read_text(encoding="utf-8").replace("\r\n", "\n")
+    checked_in_csv = checked_in.read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert generated_csv == checked_in_csv
+    assert generated["report_path"].exists()
