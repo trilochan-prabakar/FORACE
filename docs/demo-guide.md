@@ -50,8 +50,8 @@ recordings.
 | 1:05–2:00 | Run `venv/bin/python -B demo.py`. Point out temporary lab copy, fresh baseline authentication, and Watchdog start. | Step 1: HMAC verified, zero initial findings. Step 2: monitor starts on isolated copy. |
 | 2:00–2:40 | Show the R01 safe text edit and the printed result. | Rule R01, High severity, `T1021.004`, plain-English SSH root-login explanation. No SSH service is restarted. |
 | 2:40–3:15 | Show smart/hash-only counts and audit results. | Both modes detect the content edit; audit is valid before demo-only tampering and invalid after. Workspace cleanup is reported. |
-| 3:15–3:45 | Show the dashboard using retained demo paths and navigate its six sections. | Actual SQLite finding appears; tampered isolated audit database appears invalid. |
-| 3:45–4:15 | Show Evaluation page or actual `results.csv` results. Explain the small synthetic corpus and its limits. | 12/12 expected attack rules detected, 0/4 smart benign false-positive scenarios, hash-only 11/12 attacks and 3/4 benign alerts. |
+| 3:15–3:45 | Show the dashboard using retained demo paths and navigate its seven sections. | Actual SQLite finding appears; tampered isolated audit database appears invalid. |
+| 3:45–4:15 | Show Evaluation page or actual `results.csv` results. Explain the small synthetic corpus and its limits. | 20/20 expected attack scenarios detected, 0/10 smart benign false-positive scenarios, hash-only 18/20 attacks and 9/10 benign scenarios alerted. |
 | 4:15–4:30 | Close with the key security decision and limitation. | The initialized project baseline is authenticated using its local HMAC key and detached signature. |
 
 If time is short, skip the retained dashboard workspace and use the CLI output;
@@ -85,7 +85,7 @@ line is absent when `--keep` is selected; that option prints the retained path.
 - [ ] Evaluation page with measured CSV-derived metrics and rule coverage.
 - [ ] Audit & Verification showing invalid audit status for the intentionally
   tampered demo database.
-- [ ] Demo / About with current trust-anchor history and limitations.
+- [ ] Scan History with recorded scan metadata, per-file observations, scanner errors, and manifest verification.\n- [ ] Demo / About with current trust-anchor history and limitations.
 - [ ] Terminal output showing demo verification and cleanup; redact any
   temporary or local path before sharing.
 - [ ] No screenshot edited to imply a failed or unperformed check passed.
