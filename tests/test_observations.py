@@ -167,3 +167,35 @@ def test_verify_evidence_returns_nonzero_for_v1_database(tmp_path, capsys):
     initialize_database(db)
     assert main(["verify-evidence", "--db", str(db)]) == 1
     assert '"status": "unavailable"' in capsys.readouterr().out
+
+
+
+def test_failed_or_partial_scan_does_not_clear_unobserved_finding(tmp_path):
+    db = tmp_path / "partial-preserve.db"
+    initialize_database(db)
+    ensure_observation_schema(db)
+    finding = {
+        "file_path": "etc/test.conf", "change_type": "modified", "rule_id": "R01",
+        "severity": "High", "attack_id": "T1021.004", "explanation": "SSH root login enabled",
+    }
+    record_scan(
+        db, sample(), trigger="watchdog:modified", mode="smart", findings_count=1,
+        finding_records=[{"finding": finding, "fingerprint": "d" * 64}],
+    )
+    partial = {"files": {}, "errors": {"etc": "Permission denied"}}
+    record_scan(db, partial, trigger="reconciliation", mode="smart", findings_count=0)
+    with sqlite3.connect(db) as con:
+        cleared = con.execute(
+            "SELECT COUNT(*) FROM audit_log WHERE event_type='finding_cleared'"
+        ).fetchone()[0]
+    assert cleared == 0
+    assert verify_observation_history(db)["status"] == "valid"
+
+
+def test_v1_audit_verification_remains_compatible_before_v3_migration(tmp_path):
+    from forace.store import verify_audit_chain
+
+    db = tmp_path / "legacy.db"
+    initialize_database(db)
+    assert verify_audit_chain(db)["status"] == "empty"
+    assert verify_observation_history(db)["status"] == "unavailable"
