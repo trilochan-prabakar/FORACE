@@ -11,7 +11,8 @@ This is the foundation for V3 timelines. It does not reconstruct transient
 changes that occurred entirely between observations.
 
 ## Data model
-- scan_runs: one lifecycle record per completed, partial, or failed scan.\n- findings.scan_id: links each newly recorded finding to the scan that first observed that active state.
+- scan_runs: one lifecycle record per completed, partial, or failed scan.
+- findings.scan_id: links each newly recorded finding to the scan that first observed that active state.
 - file_observations: SHA-256 and selected metadata per observed regular file.
 - observation_errors: path-scoped errors from partial scans.
 - audit_log: chained scan_completed and scan_failed events bind scan IDs and
