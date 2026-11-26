@@ -784,6 +784,18 @@ def render_scan_history(db_path):
             st.code(row["manifest_sha256"], language=None)
             if row.get("error_message"):
                 st.warning(row["error_message"])
+            files = row.get("files", [])
+            errors = row.get("errors", [])
+            st.markdown(f"**Observed file inventory ({len(files)})**")
+            if files:
+                st.dataframe(pd.DataFrame(files), width="stretch", hide_index=True)
+            else:
+                st.caption("No regular-file observations were recorded for this scan.")
+            st.markdown(f"**Scanner errors ({len(errors)})**")
+            if errors:
+                st.dataframe(pd.DataFrame(errors), width="stretch", hide_index=True)
+            else:
+                st.caption("No scanner errors were recorded.")
     st.caption("A scan records a point-in-time observation. It cannot prove that no transient change occurred between scans.")
 
 def render_demo():
