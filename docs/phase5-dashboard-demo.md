@@ -52,8 +52,8 @@ signature paths unless explicit alternatives are supplied.
   accessibility, monitor process status, finding severity counts, finding
   timeline, rule counts, and recent events read from the SQLite audit log.
 - **Security Findings:** case-insensitive search over stored finding fields,
-  severity filters, newest-first ordering, detailed explanations, and ATT&CK
-  technique links.
+  severity filters, newest-first ordering, detailed explanations, ATT&CK
+  technique links, and originating scan IDs for V2 findings.
 - **File Integrity:** read-only inventory of the project's controlled `lab/`,
   compared only with an authenticated baseline.
 - **Audit & Verification:** trust artifact status, audit-chain state, and
