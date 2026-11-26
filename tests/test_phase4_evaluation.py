@@ -108,3 +108,17 @@ def test_isolated_simulation_copy_does_not_change_source_files(tmp_path):
     result = run_evaluation(SOURCE_LAB, tmp_path, scenarios=one_scenario)
     assert result["rows"][0]["smart_expected_rule_detected"] is True
     assert _tree_digest(SOURCE_LAB) == source_hash
+
+
+def test_checked_in_results_csv_matches_expanded_v2_corpus():
+    from forace.dashboard_data import load_evaluation_results
+
+    result = load_evaluation_results(PROJECT / "results.csv")
+    assert result["status"] == "available"
+    assert len(result["rows"]) == 30
+    assert result["metrics"]["total_attack_scenarios"] == 20
+    assert result["metrics"]["total_benign_scenarios"] == 10
+    assert result["metrics"]["successfully_detected_attack_scenarios"] == 20
+    assert result["metrics"]["false_positive_scenarios"] == 0
+    assert result["metrics"]["hash_only_detected_attack_scenarios"] == 18
+    assert result["metrics"]["hash_only_benign_alert_scenarios"] == 9
