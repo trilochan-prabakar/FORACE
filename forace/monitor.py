@@ -19,6 +19,8 @@ from forace.observations import ensure_observation_schema, record_failed_scan, r
 
 
 TEMP_SUFFIXES = {".swp", ".tmp", ".temp", ".part", ".lock"}
+MAX_EVENT_CACHE_ENTRIES = 4096
+EVENT_CACHE_MIN_AGE_SECONDS = 60.0
 LOGGER = logging.getLogger("forace.monitor")
 
 
@@ -101,14 +103,15 @@ class IntegrityMonitor(FileSystemEventHandler):
                 self.db_path, current, trigger=trigger, mode=self.mode,
                 findings_count=len(findings), started_at_utc=started,
             )
-            self.last_error = None
+            self.last_error = (f"Latest scan completed with {len(current['errors'])} scanner error(s)"
+                               if current.get("errors") else None)
             return stored
 
     def _record_failure(self, trigger, error):
         self.last_error = str(error)
         try:
-            record_failed_scan(self.db_path, trigger=trigger, mode=self.mode,
-                               error_message=self.last_error)
+            self.last_scan = record_failed_scan(self.db_path, trigger=trigger, mode=self.mode,
+                                                error_message=self.last_error)
         except (OSError, ValueError, RuntimeError, sqlite3.Error) as audit_error:
             LOGGER.error("Could not persist failed scan state: %s", audit_error)
 
@@ -127,6 +130,14 @@ class IntegrityMonitor(FileSystemEventHandler):
         with self._lock:
             previous = self._last_event.get(key)
             self._last_event[key] = now
+            if len(self._last_event) > MAX_EVENT_CACHE_ENTRIES:
+                cutoff = now - max(EVENT_CACHE_MIN_AGE_SECONDS, self.debounce_seconds * 4)
+                self._last_event = {event_key: stamp for event_key, stamp in self._last_event.items()
+                                    if stamp >= cutoff}
+                if len(self._last_event) > MAX_EVENT_CACHE_ENTRIES:
+                    oldest = sorted(self._last_event, key=self._last_event.get)
+                    for stale_key in oldest[:len(self._last_event) - MAX_EVENT_CACHE_ENTRIES]:
+                        self._last_event.pop(stale_key, None)
             if previous is not None and now - previous < self.debounce_seconds:
                 return []
         try:
