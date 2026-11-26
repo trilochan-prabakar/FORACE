@@ -11,7 +11,7 @@ This is the foundation for V3 timelines. It does not reconstruct transient
 changes that occurred entirely between observations.
 
 ## Data model
-- scan_runs: one lifecycle record per completed, partial, or failed scan.
+- scan_runs: one lifecycle record per completed, partial, or failed scan.\n- findings.scan_id: links each newly recorded finding to the scan that first observed that active state.
 - file_observations: SHA-256 and selected metadata per observed regular file.
 - observation_errors: path-scoped errors from partial scans.
 - audit_log: chained scan_completed and scan_failed events bind scan IDs and
@@ -23,7 +23,7 @@ copied into the observation ledger.
 
 ## Migration and commands
 The migration is additive. Existing V1 findings and audit rows are preserved.
-PRAGMA user_version advances to 2. A newer unsupported schema is rejected.
+PRAGMA user_version advances to 3. The V3 additive migration adds nullable `findings.scan_id` provenance; it preserves legacy finding rows with a null scan ID. A newer unsupported schema is rejected.
 V1 databases remain readable; history is reported unavailable until V2
 monitoring initializes the observation schema.
 
@@ -32,7 +32,7 @@ Run:
   python -m forace verify-evidence
 
 ## Trust and limitations
-The manifest is linked to the local SHA-256 audit chain. This makes edits to
+Each scan's manifest and newly recorded findings are committed with their audit records in one SQLite transaction. Incomplete scans do not clear findings for paths that could not be observed. The manifest is linked to the local SHA-256 audit chain. This makes edits to
 observation rows detectable while the chain remains trusted, but is not
 tamper-proof storage or an external timestamp authority. An attacker able to
 rewrite the whole database can rebuild local records. A scan proves only what
