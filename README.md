@@ -273,7 +273,7 @@ dashboard data-source fields. The demo database is intentionally tampered
 after its valid-chain check, so the dashboard should show it as invalid. The
 workspace contains temporary trust material; do not publish or share it.
 
-Run the complete 16-scenario evaluation without replacing the repository's
+Run the complete 30-scenario evaluation without replacing the repository's
 existing Phase 4 outputs:
 
 ```bash
@@ -282,9 +282,7 @@ venv/bin/python -B evaluate.py --output-dir /tmp/FORACE-evaluation
 
 The output directory receives `results.csv` and `evaluation_report.md`.
 Every scenario uses a separate copied lab and fresh baseline/key/signature.
-Metrics are recalculated from the generated rows. The expanded V2 corpus contains 20 attack scenarios and 10 benign scenarios.
-Run the command to generate the measured V2 metrics; previous V1 metrics are
-not carried forward as V2 results. These are corpus results, not real-world rates.
+Metrics are recalculated from the generated rows. The expanded V2 corpus contains 20 attack scenarios and 10 benign scenarios. The test suite measures 20/20 expected-rule detections and 0/10 smart false-positive scenarios; hash-only detects 18/20 attacks and alerts on 9/10 benign content edits. These are synthetic corpus results, not real-world rates.
 See [evaluation methodology and results](docs/phase4-evaluation.md).
 
 ## CLI reference
@@ -343,4 +341,4 @@ The dashboard provides read-only views of stored data and has no authentication.
 - Linux and WSL are the supported environments. Native Windows execution is not supported.
 - The Streamlit dashboard has no authentication. Keep it bound to localhost and do not expose it to an untrusted network.
 - Hash-only mode does not detect metadata-only changes such as SUID changes.
-- The evaluation set remains the original 12 synthetic attack scenarios (one authored for each R01–R12) and four benign scenarios. New evasion-focused regressions are tested separately and are not included in `results.csv`; the evaluation does not estimate performance against real adversaries or production filesystems.
+- The evaluation set contains 20 synthetic attack scenarios covering R01–R12 and 10 benign scenarios. Additional monitoring edge cases and unsupported parser semantics remain outside the evaluation corpus; the evaluation does not estimate performance against real adversaries or production filesystems.
