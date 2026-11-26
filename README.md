@@ -237,8 +237,8 @@ open a browser automatically, copy the URL into the browser. The dashboard is
 read-only and shows SQLite, baseline authentication, monitor status, scan
 history, observation manifest verification, and `results.csv`. File Integrity is fixed to the project's `lab/` directory.
 Missing or invalid inputs are shown as such; the dashboard does not invent
-sample alerts. Its six sections are Overview, Security Findings, File
-Integrity, Audit & Verification, Evaluation, and Demo / About. The command
+sample alerts. Its seven sections are Overview, Security Findings, File
+Integrity, Audit & Verification, Evaluation, Scan History, and Demo / About. The command
 binds the server to localhost. See
 [dashboard operation](docs/phase5-dashboard-demo.md).
 
